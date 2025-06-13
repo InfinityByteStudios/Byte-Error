@@ -1,5 +1,5 @@
 // Visual Effects Manager for NeuroCore: Byte Wars
-class VisualEffects {
+window.VisualEffects = class {
     constructor() {
         // Screen shake system
         this.screenShake = {

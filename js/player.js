@@ -1,4 +1,6 @@
-class Player {    constructor(x, y) {        this.x = x;
+// Player class - handles player movement, actions and states
+window.Player = class {
+    constructor(x, y) {        this.x = x;
         this.y = y;
         this.radius = 15;
         

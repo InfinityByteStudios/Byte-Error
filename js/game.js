@@ -1,4 +1,6 @@
-class Game {    constructor() {
+// Main Game class - handles game initialization and main loop
+window.Game = class {
+    constructor() {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         
@@ -18,8 +20,11 @@ class Game {    constructor() {
         
         this.enemyManager = new EnemyManager(this.arena, this.difficultyManager);
         this.upgradeSystem = new UpgradeSystem(); // Add upgrade system
-        this.visualEffects = new VisualEffects(); // Visual effects system
-        this.ui = new ModernUI(); // Use the new modern UI system        // Game state
+        this.visualEffects = new VisualEffects(); // Visual effects system        // Initialize UI system
+        this.ui = new ModernUI();
+        this.ui.setGame(this);
+
+        // Game state
         this.score = 0;
         this.kills = 0;
         this.gameOver = false;
@@ -37,6 +42,10 @@ class Game {    constructor() {
         
         // Set up auto-pause when user switches tabs
         this.setupAutoFocusPause();
+        
+        // ByteCoin system
+        this.byteCoins = 0;
+        this.byteCoinMultiplier = 1; // For future upgrades that increase coin gains
         
         this.showSplashScreen();
     }    showSplashScreen() {
@@ -341,46 +350,31 @@ class Game {    constructor() {
             setTimeout(resizeCanvas, 100); // Small delay to ensure proper dimensions
         });
     }    gameLoop(currentTime) {
-        if (!this.running) return;
-        
-        // Initialize lastTime on first frame
-        if (this.lastTime === 0) {
+        if (!this.lastTime) {
             this.lastTime = currentTime;
-            requestAnimationFrame((time) => this.gameLoop(time));
-            return;
         }
         
-        // Calculate delta time in seconds
-        var deltaTime = (currentTime - this.lastTime) / 1000;
+        const deltaTime = (currentTime - this.lastTime) / 1000;
         this.lastTime = currentTime;
-
-        // Cap delta time both minimum and maximum to prevent physics issues
-        var cappedDeltaTime = Math.min(Math.max(deltaTime, 0.001), 0.033); // Cap between 1ms and ~33ms
-
-        // Update survival time if game has started and not paused or game over
-        if (this.gameStarted && !this.paused && !this.gameOver) {
-            if (!this.gameStartTime) {
-                this.gameStartTime = currentTime;
-            }
-            this.survivalTime = Math.max(0, (currentTime - this.gameStartTime) / 1000);
-        }
-
-        // Always handle input even when paused (for pause/unpause controls)
-        this.handleGameInput();
         
-        // Only update game systems if not paused
-        if (!this.paused) {
-            this.update(cappedDeltaTime);
+        if (!this.gameOver && !this.paused) {
+            this.update(deltaTime);
+            
+            // Update survival time
+            if (this.gameStartTime !== null) {
+                this.survivalTime = (Date.now() - this.gameStartTime) / 1000;
+            }
         }
         
         this.render();
-
+        
         // Update UI with current game data
         const gameData = {
             player: this.player,
             score: this.score,
             kills: this.kills,
             survivalTime: this.survivalTime,
+            byteCoins: this.byteCoins,
             enemyCount: this.enemyManager.getActiveEnemyCount(),
             enemyManager: this.enemyManager,
             upgradeSystem: this.upgradeSystem,
@@ -393,7 +387,9 @@ class Game {    constructor() {
         this.ui.update(deltaTime, gameData);
         
         requestAnimationFrame((time) => this.gameLoop(time));
-    }    update(deltaTime) {
+    }
+    
+    update(deltaTime) {
         // Don't update game if game over
         if (this.gameOver) return;
 
@@ -418,12 +414,12 @@ class Game {    constructor() {
         
         // Handle difficulty-based healing
         this.handleDifficultyHealing(deltaTime);
-        
-        // Check bullet-enemy collisions
+          // Check bullet-enemy collisions
         const collisionResult = this.enemyManager.checkBulletCollisions(this.player.bullets, this.visualEffects);
         if (collisionResult.points > 0) {
             this.score += collisionResult.points;
             this.kills += collisionResult.kills;
+            this.addByteCoins(collisionResult.byteCoins || 0);
             
             // Call player onKill method for each kill (to charge Overclock)
             for (let i = 0; i < collisionResult.kills; i++) {
@@ -573,6 +569,20 @@ class Game {    constructor() {
           // Change difficulty when game over (press B)
         if (this.gameOver && this.input.wasKeyPressed('KeyB')) {
             this.changeDifficultyOnGameOver();
+        }
+    }    pause() {
+        if (!this.gameOver) {
+            console.log('🎮 Game paused');
+            this.paused = true;
+            this.wasManuallyPaused = true;
+        }
+    }
+
+    unpause() {
+        if (!this.gameOver && this.wasManuallyPaused) {
+            console.log('🎮 Game unpaused');
+            this.paused = false;
+            this.wasManuallyPaused = false;
         }
     }    restartGame() {
         // Reset audio using AudioManager
@@ -796,17 +806,10 @@ class Game {    constructor() {
             
             if (healAmount > 0 && this.player.health < this.player.maxHealth) {
                 this.player.heal(healAmount);
-                
-                // Trigger healing visual effect with heal amount
+                  // Trigger healing visual effect with heal amount
                 this.visualEffects.onPlayerHeal(this.player.x, this.player.y, healAmount);
                 
                 console.log(`💚 Wave ${currentWave} healing: +${healAmount} HP (${config.healingType})`);
-            }
-        }
+            }        }
     }
 }
-
-// Start the game when page loads
-window.addEventListener('load', () => {
-    new Game();
-});

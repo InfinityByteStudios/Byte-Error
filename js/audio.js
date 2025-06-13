@@ -1,7 +1,7 @@
 // Audio Manager for NeuroCore: Byte Wars
 // Handles all audio functionality including intro music, game music, and smooth transitions
 
-class AudioManager {
+window.AudioManager = class {
     constructor() {
         // Initialize intro audio
         this.introAudio = new Audio('assets/Music/Loading Intro.mp3');

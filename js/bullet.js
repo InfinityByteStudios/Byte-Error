@@ -1,4 +1,5 @@
-class Bullet {
+// Bullet class - projectiles fired by player weapons
+window.Bullet = class {
     constructor(x, y, direction, speed = 400) {        this.x = x;
         this.y = y;
         this.direction = direction;

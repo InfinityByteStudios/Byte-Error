@@ -1,5 +1,5 @@
 // Upgrade System for NeuroCore: Byte Wars
-class UpgradeSystem {
+window.UpgradeSystem = class {
     constructor() {
         this.activeUpgrades = new Map(); // Track which upgrades are active and their levels
         this.upgradeDefinitions = this.initializeUpgradeDefinitions();

@@ -1,4 +1,7 @@
-class EnemyManager {    constructor(arena, difficultyManager = null) {
+// EnemyManager class - handles enemy spawning, updates, and interactions
+// Define the EnemyManager class explicitly on the window object
+window.EnemyManager = class {
+    constructor(arena, difficultyManager = null) {
         this.enemies = [];
         this.arena = arena;
         this.difficultyManager = difficultyManager;
@@ -25,7 +28,9 @@ class EnemyManager {    constructor(arena, difficultyManager = null) {
         this.reset();
         
         console.log('🎯 Enemy Manager initialized with difficulty support');
-    }reset() {
+    }
+    
+    reset() {
         // Clear all enemies
         this.enemies = [];
         
@@ -280,15 +285,19 @@ class EnemyManager {    constructor(arena, difficultyManager = null) {
         // Trigger enemy spawn visual effect
         if (this.visualEffects) {
             this.visualEffects.onEnemySpawn(spawnX, spawnY, enemyType);
-        }
-          console.log(`👾 Spawned ${enemyType} at (${Math.round(spawnX)}, ${Math.round(spawnY)}) - Wave ${this.currentWave} (${this.enemiesSpawnedThisWave}/${this.waveConfig.enemies.length})`);
+        }          console.log(`👾 Spawned ${enemyType} at (${Math.round(spawnX)}, ${Math.round(spawnY)}) - Wave ${this.currentWave} (${this.enemiesSpawnedThisWave}/${this.waveConfig.enemies.length})`);
     }
-      // Check bullet collisions and return points scored
-    checkBulletCollisions(bullets, visualEffects = null) {
-        let pointsScored = 0;
+
+    // Check bullet collisions and return points scored
+    checkBulletCollisions(bullets, visualEffects) {
+        let result = {
+            points: 0,
+            kills: 0,
+            byteCoins: 0
+        };
+        let hitData = [];  // Initialize hitData array
         let killCount = 0;
-        let hitData = []; // Store hit information for visual effects
-        
+
         for (let bullet of bullets) {
             if (!bullet.active) continue;
             
@@ -304,7 +313,10 @@ class EnemyManager {    constructor(arena, difficultyManager = null) {
                     
                     const enemyWasAlive = enemy.health > 0;
                     const points = enemy.takeDamage(bullet.damage); // Use bullet's damage value
-                    pointsScored += points;
+                    result.points += points;
+                    
+                    // Add ByteCoins for each hit
+                    result.byteCoins += enemy.byteCoins;
                     
                     // Store hit data for visual effects
                     const hitInfo = {
@@ -337,14 +349,14 @@ class EnemyManager {    constructor(arena, difficultyManager = null) {
                         bullet.active = false;
                         break; // Bullet is done piercing
                     }
-                    // If bullet has piercing left, continue to next enemy
-                }
-            }
+                }            }
         }
         
-        return { points: pointsScored, kills: killCount, hits: hitData };
+        result.kills = killCount;  // Add the kill count to the result
+        return result;
     }
-      // Check player collisions
+
+    // Check player collisions
     checkPlayerCollisions(player, arena = null) {
         // If player is protected by safe zone, no collision damage
         if (arena && arena.isSafeZoneActive()) {
@@ -424,8 +436,10 @@ class EnemyManager {    constructor(arena, difficultyManager = null) {
     // Continue to next wave after upgrade selection
     continueAfterUpgrade() {
         // Reset the timer to immediately proceed to next wave
-        if (this.waveState === 'completed') {
-            this.waveTimer = this.timeBetweenWaves;
+        if (this.waveState === 'completed') {            this.waveTimer = this.timeBetweenWaves;
         }
     }
 }
+
+// Make EnemyManager available globally
+window.EnemyManager = EnemyManager;

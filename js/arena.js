@@ -1,4 +1,5 @@
-class Arena {
+// Arena class - handles game boundaries and safe zones
+window.Arena = class {
     constructor(width, height) {
         this.width = width;
         this.height = height;

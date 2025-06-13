@@ -1,5 +1,9 @@
 // Modern HTML/CSS UI System for NeuroCore: Byte Wars
-class ModernUI {    constructor() {
+// Modern HTML/CSS UI System for NeuroCore: Byte Wars
+window.ModernUI = class {
+    constructor() {
+        this.game = null; // Reference to the game instance
+        
         // Get all UI elements
         this.elements = {
             // Health system
@@ -57,7 +61,12 @@ class ModernUI {    constructor() {
             
             // Upgrade system
             upgradeOverlay: document.getElementById('upgradeOverlay'),
-            upgradeChoices: document.getElementById('upgradeChoices')        };
+            upgradeChoices: document.getElementById('upgradeChoices'),
+
+            // ByteCoin Display
+            byteCoinDisplay: document.getElementById('byteCoinDisplay')        };
+        
+        this.game = null; // Will be set by the game instance
           // UI state
         this.changelogVisible = false;
         this.settingsVisible = false;
@@ -80,11 +89,11 @@ class ModernUI {    constructor() {
         this.scoreFlashTimer = 0;
         this.killFlashTimer = 0;
     }    update(deltaTime, gameData) {
-        this.updateFlashTimers(deltaTime);
-        this.updateHealth(gameData.player);
+        this.updateFlashTimers(deltaTime);        this.updateHealth(gameData.player);
         this.updateOverclock(gameData.player);
-        this.updateDash(gameData.player);        this.updateSafeZone(gameData.arena);
-        this.updateStats(gameData.score, gameData.kills, gameData.survivalTime);        
+        this.updateDash(gameData.player);
+        this.updateSafeZone(gameData.arena);
+        this.updateStats(gameData);
         this.updateWave(gameData.enemyManager);
         this.updateUpgrades(gameData.upgradeSystem);
         this.updateMiniMap(gameData);
@@ -272,18 +281,24 @@ class ModernUI {    constructor() {
                 statusDiv.textContent = `${Math.ceil(status.timeRemaining)}s protection`;
             }
             statusDiv.className = 'safezone-status';
-        }
-    }      updateStats(score, kills, survivalTime = 0) {
-        this.elements.scoreDisplay.textContent = `SCORE: ${score}`;
-        this.elements.killsDisplay.textContent = `KILLS: ${kills}`;
+        }    }
+    
+    updateStats(gameData) {
+        this.elements.scoreDisplay.textContent = `SCORE: ${gameData.score}`;
+        this.elements.killsDisplay.textContent = `KILLS: ${gameData.kills}`;
         
         // Format survival time as MM:SS
         // Ensure we have a valid number
-        const validTime = Number.isFinite(survivalTime) ? survivalTime : 0;
+        const validTime = Number.isFinite(gameData.survivalTime) ? gameData.survivalTime : 0;
         const minutes = Math.floor(validTime / 60);
         const seconds = Math.floor(validTime % 60);
         const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
         this.elements.survivalTimeDisplay.textContent = `TIME: ${timeString}`;
+        
+        // Update ByteCoin display
+        if (this.elements.byteCoinDisplay) {
+            this.elements.byteCoinDisplay.textContent = `🪙 ${gameData.byteCoins || 0}`;
+        }
     }
       updateMiniMap(gameData) {
         const ctx = this.minimapCtx;
@@ -529,23 +544,35 @@ class ModernUI {    constructor() {
         });
     }
 
+    setGame(game) {
+        this.game = game;
+        console.log('🎮 UI connected to game instance');
+    }
+
     // Settings functionality
     toggleSettings() {
-        this.settingsVisible = !this.settingsVisible;
-        if (this.settingsVisible) {
+        if (!this.settingsVisible) {
             this.showSettings();
+            this.settingsVisible = true;
         } else {
             this.hideSettings();
+            this.settingsVisible = false;
         }
     }
     
     showSettings() {
-        this.settingsVisible = true;
+        if (this.game) {
+            this.game.pause(); // Pause the game when settings are shown
+            console.log('⚙️ Settings opened, game paused');
+        }
         this.elements.settingsOverlay.classList.remove('hidden');
     }
     
     hideSettings() {
-        this.settingsVisible = false;
+        if (this.game) {
+            this.game.unpause(); // Unpause the game when settings are hidden
+            console.log('⚙️ Settings closed, game unpaused');
+        }
         this.elements.settingsOverlay.classList.add('hidden');
     }    updateSettingsState(gameData) {
         // Settings state synchronization (debug functionality removed)

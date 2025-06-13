@@ -1,4 +1,5 @@
-class InputManager {
+// InputManager class - handles keyboard and mouse input
+window.InputManager = class {
     constructor() {
         this.keys = {};
         this.keyPressed = {}; // Track single key presses

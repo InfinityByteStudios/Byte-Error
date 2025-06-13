@@ -108,6 +108,7 @@
                     <div class="stats-item" id="scoreDisplay">SCORE: 0</div>
                     <div class="stats-item" id="killsDisplay">KILLS: 0</div>
                     <div class="stats-item" id="survivalTimeDisplay">TIME: 0:00</div>
+                    <div class="stats-item" id="byteCoinDisplay">🪙 0</div>
                 </div>
             </div>
             
@@ -427,23 +428,36 @@
                 </div>
             </div>
         </div>
-    </div>    <script src="js/input.js"></script>
+    </div>    <!-- Essential Classes (no dependencies) -->
     <script src="js/bullet.js"></script>
-    <script src="js/weapon.js"></script>
-    <script src="js/arena.js"></script>
-    <script src="js/audio.js"></script>
-    <script src="js/difficultyManager.js"></script>
     <script src="js/enemy.js"></script>
-    <script src="js/enemyManager.js"></script>
-    <script src="js/upgradeSystem.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/arena.js"></script>
+
+    <!-- Core Systems (depends on essentials) -->
+    <script src="js/weapon.js"></script>
+    <script src="js/audio.js"></script>
     <script src="js/visualEffects.js"></script>
+    <script src="js/difficultyManager.js"></script>
+    <script src="js/upgradeSystem.js"></script>    <!-- Game Management (depends on core systems) -->
+    <script src="js/enemyManager.js"></script>
     <script src="js/modernUI.js"></script>
     <script src="js/player.js"></script>
-    <script src="js/game.js"></script><script>
-        // Initialize game when page loads
-        window.addEventListener('load', () => {
-            console.log('Page loaded, initializing game...');
-            window.game = new Game(); // Make game accessible globally for testing
+
+    <!-- Main Game -->
+    <script src="js/game.js"></script>
+    
+    <!-- Simple Game Initialization -->
+    <script>
+        // Simple initialization to ensure the game starts
+        window.addEventListener('load', function() {
+            console.log("🎮 Starting game...");
+            try {
+                window.game = new Game();
+                console.log("🎮 Game successfully initialized!");
+            } catch (error) {
+                console.error("❌ Error initializing game:", error);
+            }
         });
     </script>
 </body>

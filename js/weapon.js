@@ -1,4 +1,5 @@
-class Weapon {    constructor() {        this.fireRate = 5; // bullets per second
+// Weapon class - handles player weapons and firing mechanics
+window.Weapon = class {    constructor() {        this.fireRate = 5; // bullets per second
         this.lastShotTime = 0;
         this.bulletSpeed = 560; // increased for even larger arena
         this.damage = 10;

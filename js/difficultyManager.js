@@ -1,5 +1,5 @@
 // Difficulty Manager for NeuroCore: Byte Wars
-class DifficultyManager {
+window.DifficultyManager = class {
     constructor() {
         this.currentDifficulty = 'medium'; // Default difficulty
         

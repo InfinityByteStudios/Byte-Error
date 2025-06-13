@@ -1,4 +1,5 @@
-class Enemy {
+// Enemy class - represents enemies in the game
+window.Enemy = class {
     constructor(x, y, type = 'datawisp') {
         this.x = x;
         this.y = y;
@@ -6,6 +7,7 @@ class Enemy {
         this.active = true;
         this.health = 100;
         this.maxHealth = 100;
+        this.byteCoins = 0; // Will be set in setTypeProperties
         
         // Set properties based on enemy type
         this.setTypeProperties();
@@ -28,6 +30,7 @@ class Enemy {
                 this.color = '#ff4444';
                 this.glowColor = '#ff6666';
                 this.points = 10;
+                this.byteCoins = 1;
                 break;            case 'bitbug':
                 this.radius = 8;
                 this.speed = 140; // fast and aggressive (increased for larger arena)
@@ -40,6 +43,7 @@ class Enemy {
                 this.dashCooldown = 2.0; // seconds between dashes
                 this.isDashing = false;
                 this.dashSpeed = 350; // much faster during dash (increased for larger arena)
+                this.byteCoins = 2;
                 break;            case 'memoryleech':
                 this.radius = 15;
                 this.speed = 50; // slower than datawisp
@@ -52,6 +56,7 @@ class Enemy {
                 this.drainRate = 0.3; // How much energy to drain per second
                 this.pulseTimer = 0;
                 this.isDraining = false;
+                this.byteCoins = 3;
                 break;
             case 'syntaxbreaker':
                 this.radius = 14;
@@ -67,6 +72,37 @@ class Enemy {
                 this.isGlitching = false;
                 this.glitchDuration = 1.0; // how long glitch effect lasts
                 this.pulseTimer = 0;
+                this.byteCoins = 4;
+                break;
+            case 'theforked':
+                this.radius = 18;
+                this.speed = 40; // slower but more powerful
+                this.health = 120;
+                this.maxHealth = 120;
+                this.color = '#ff00ff'; // Magenta color
+                this.glowColor = '#ff33ff';
+                this.points = 30;
+                this.byteCoins = 5;
+                break;
+            case 'corruptedprotocol':
+                this.radius = 20;
+                this.speed = 30; // slow and tanky
+                this.health = 200;
+                this.maxHealth = 200;
+                this.color = '#00ffff'; // Cyan color
+                this.glowColor = '#33ffff';
+                this.points = 50;
+                this.byteCoins = 10;
+                break;
+            case 'neurofork':
+                this.radius = 16;
+                this.speed = 55; // faster than theforked
+                this.health = 100;
+                this.maxHealth = 100;
+                this.color = '#ffff00'; // Yellow color
+                this.glowColor = '#ffff33';
+                this.points = 40;
+                this.byteCoins = 15;
                 break;
             default:
                 this.radius = 10;
@@ -622,6 +658,8 @@ class Enemy {
             avoidanceY /= nearbyCount;
         }
         
-        return { x: avoidanceX, y: avoidanceY };
-    }
+        return { x: avoidanceX, y: avoidanceY };    }
 }
+
+// Make Enemy available globally
+window.Enemy = Enemy;
