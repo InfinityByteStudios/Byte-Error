@@ -1,6 +1,6 @@
 // InputManager class - handles keyboard and mouse input
 window.InputManager = class {
-    constructor() {
+    constructor(game = null) {
         this.keys = {};
         this.keyPressed = {}; // Track single key presses
         this.mouse = {
@@ -8,9 +8,10 @@ window.InputManager = class {
             y: 0,
             isDown: false
         };
+        this.game = game; // Reference to game for custom key bindings
         
         this.setupEventListeners();
-    }    setupEventListeners() {
+    }setupEventListeners() {
         // Keyboard events
         document.addEventListener('keydown', (e) => {
             this.keys[e.code] = true;
@@ -50,14 +51,22 @@ window.InputManager = class {
             return true;
         }
         return false;
-    }
-      getMovementVector() {
+    }    getMovementVector() {
         let x = 0;
         let y = 0;
-          if (this.isKeyPressed('KeyW') || this.isKeyPressed('ArrowUp')) y -= 1;
-        if (this.isKeyPressed('KeyS') || this.isKeyPressed('ArrowDown')) y += 1;
-        if (this.isKeyPressed('KeyA') || this.isKeyPressed('ArrowLeft')) x -= 1;
-        if (this.isKeyPressed('KeyD') || this.isKeyPressed('ArrowRight')) x += 1;
+        
+        // Use custom key bindings if available, otherwise fall back to defaults
+        const bindings = this.game ? this.game.keyBindings : {
+            moveUp: 'KeyW',
+            moveDown: 'KeyS', 
+            moveLeft: 'KeyA',
+            moveRight: 'KeyD'
+        };
+        
+        if (this.isKeyPressed(bindings.moveUp) || this.isKeyPressed('ArrowUp')) y -= 1;
+        if (this.isKeyPressed(bindings.moveDown) || this.isKeyPressed('ArrowDown')) y += 1;
+        if (this.isKeyPressed(bindings.moveLeft) || this.isKeyPressed('ArrowLeft')) x -= 1;
+        if (this.isKeyPressed(bindings.moveRight) || this.isKeyPressed('ArrowRight')) x += 1;
         
         // Normalize diagonal movement
         if (x !== 0 && y !== 0) {

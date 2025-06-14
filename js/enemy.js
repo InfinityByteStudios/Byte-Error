@@ -8,9 +8,11 @@ window.Enemy = class {
         this.health = 100;
         this.maxHealth = 100;
         this.byteCoins = 0; // Will be set in setTypeProperties
-        
-        // Set properties based on enemy type
+          // Set properties based on enemy type
         this.setTypeProperties();
+        
+        // Load sprite for this enemy type
+        this.loadSprite();
         
         // Movement
         this.velocity = { x: 0, y: 0 };
@@ -110,8 +112,42 @@ window.Enemy = class {
                 this.health = 20;
                 this.maxHealth = 20;
                 this.color = '#ff0000';
-                this.glowColor = '#ff3333';
-                this.points = 5;
+                this.glowColor = '#ff3333';                this.points = 5;
+        }
+    }
+      loadSprite() {
+        // Initialize sprite properties
+        this.sprite = null;
+        this.spriteLoaded = false;        // Set sprite size based on enemy type
+        switch (this.type) {
+            case 'datawisp':
+                // Make Data Wisp sprite much bigger and more visible
+                this.spriteSize = this.radius * 5;
+                break;
+            default:
+                // For other enemies, make sprite slightly larger
+                this.spriteSize = this.radius * 2.5;
+                break;
+        }
+        
+        // Load sprite based on enemy type
+        switch (this.type) {
+            case 'datawisp':
+                this.sprite = new Image();
+                this.sprite.onload = () => {
+                    this.spriteLoaded = true;
+                    console.log('✅ Data Wisp sprite loaded successfully');
+                };
+                this.sprite.onerror = () => {
+                    console.error('❌ Failed to load Data Wisp sprite');
+                };
+                this.sprite.src = 'assets/Sprites/Enemy Sprites/Data Wisp Sprite.png';
+                break;
+                
+            // Other enemy types can use default circle rendering for now
+            default:
+                this.spriteLoaded = false;
+                break;
         }
     }    update(deltaTime, player, arena, allEnemies = null) {
         if (!this.active) return;
@@ -324,23 +360,19 @@ window.Enemy = class {
     checkPlayerCollision(player) {
         return this.checkCollision(player.x, player.y, player.radius);
     }
-    
-    render(ctx) {
+      render(ctx) {
         if (!this.active) return;
         
         // Choose color based on flash state
         const currentColor = this.isFlashing ? '#ffffff' : this.color;
         const currentGlow = this.isFlashing ? '#ffffff' : this.glowColor;
         
-        // Draw glow effect
-        ctx.shadowColor = currentGlow;
-        ctx.shadowBlur = 15;
-        
-        // Draw enemy body
-        ctx.fillStyle = currentColor;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fill();
+        // Check if we should use sprite rendering
+        if (this.spriteLoaded && this.sprite) {
+            this.renderWithSprite(ctx, currentGlow);
+        } else {
+            this.renderAsCircle(ctx, currentColor, currentGlow);
+        }
         
         // Reset shadow
         ctx.shadowBlur = 0;
@@ -350,8 +382,10 @@ window.Enemy = class {
             this.drawHealthBar(ctx);
         }
         
-        // Draw type-specific features
-        this.drawTypeFeatures(ctx);
+        // Draw type-specific features (for non-sprite enemies)
+        if (!this.spriteLoaded) {
+            this.drawTypeFeatures(ctx);
+        }
     }
     
     drawHealthBar(ctx) {
@@ -550,6 +584,44 @@ window.Enemy = class {
         }
     }
     
+    renderWithSprite(ctx, glowColor) {
+        // Apply glow effect for sprites
+        if (this.isFlashing) {
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 20;
+        } else {
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = 12;
+        }
+        
+        // Save context for rotation (if needed in the future)
+        ctx.save();
+        
+        // Draw the sprite centered on the enemy position
+        ctx.drawImage(
+            this.sprite,
+            this.x - this.spriteSize / 2,
+            this.y - this.spriteSize / 2,
+            this.spriteSize,
+            this.spriteSize
+        );
+        
+        // Restore context
+        ctx.restore();
+    }
+    
+    renderAsCircle(ctx, currentColor, currentGlow) {
+        // Draw glow effect
+        ctx.shadowColor = currentGlow;
+        ctx.shadowBlur = 15;
+        
+        // Draw enemy body
+        ctx.fillStyle = currentColor;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
     updateTypeBehavior(deltaTime, player) {
         switch (this.type) {
             case 'bitbug':
@@ -660,6 +732,7 @@ window.Enemy = class {
         
         return { x: avoidanceX, y: avoidanceY };    }
 }
+
 
 // Make Enemy available globally
 window.Enemy = Enemy;

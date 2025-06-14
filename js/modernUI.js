@@ -58,29 +58,31 @@ window.ModernUI = class {
             difficultySelect: document.getElementById('difficultySelect'),
               // Pause overlay
             pauseOverlay: document.getElementById('pauseOverlay'),
-            
-            // Upgrade system
+              // Upgrade system
             upgradeOverlay: document.getElementById('upgradeOverlay'),
             upgradeChoices: document.getElementById('upgradeChoices'),
 
             // ByteCoin Display
-            byteCoinDisplay: document.getElementById('byteCoinDisplay')        };
+            byteCoinDisplay: document.getElementById('byteCoinDisplay'),
+
+            // Help and Changelog overlays
+            helpOverlay: document.getElementById('helpOverlay'),
+            changelogOverlay: document.getElementById('changelogOverlay')
+        };
         
-        this.game = null; // Will be set by the game instance
-          // UI state
-        this.changelogVisible = false;
+        this.game = null; // Will be set by the game instance        // UI state
         this.settingsVisible = false;
         this.upgradeVisible = false;
         this.helpVisible = false;
         
-        // Get changelog element
-        this.changelogOverlay = document.getElementById('changelogOverlay');
-        
-        // Get help element
+        // Get help element (now unified with changelog)
         this.helpOverlay = document.getElementById('helpOverlay');
         
         // Setup settings event listeners
         this.setupSettingsListeners();
+        
+        // Setup help tab listeners
+        this.setupHelpTabListeners();
         
         // Initialize minimap context
         this.minimapCtx = this.elements.minimapCanvas.getContext('2d');
@@ -99,9 +101,8 @@ window.ModernUI = class {
         this.updateMiniMap(gameData);
         
         // Sync settings with game state
-        this.updateSettingsState(gameData);
-          // Update pause overlay
-        if (gameData.paused && !this.changelogVisible && !this.settingsVisible && !this.helpVisible) {
+        this.updateSettingsState(gameData);        // Update pause overlay
+        if (gameData.paused && !this.changelogVisible && !this.settingsVisible && !this.helpVisible && !gameData.shopVisible) {
             this.showPauseOverlay();
         } else {
             this.hidePauseOverlay();
@@ -300,6 +301,12 @@ window.ModernUI = class {
             this.elements.byteCoinDisplay.textContent = `🪙 ${gameData.byteCoins || 0}`;
         }
     }
+
+    updateByteCoins(byteCoins) {
+        if (this.elements.byteCoinDisplay) {
+            this.elements.byteCoinDisplay.textContent = `🪙 ${byteCoins || 0}`;
+        }
+    }
       updateMiniMap(gameData) {
         const ctx = this.minimapCtx;
         const canvas = this.elements.minimapCanvas;
@@ -350,42 +357,19 @@ window.ModernUI = class {
         this.elements.finalKills.textContent = `Enemies Eliminated: ${kills}`;
         this.elements.gameOverScreen.style.display = 'flex';
     }
-    
-    hideGameOver() {
+      hideGameOver() {
         this.elements.gameOverScreen.style.display = 'none';
     }
-      // Changelog functionality
-    toggleChangelog() {
-        this.changelogVisible = !this.changelogVisible;
-        if (this.changelogVisible) {
-            this.changelogOverlay.classList.remove('hidden');
-        } else {
-            this.changelogOverlay.classList.add('hidden');
-        }
-    }
-      hideChangelog() {
-        this.changelogVisible = false;
-        this.changelogOverlay.classList.add('hidden');
-    }
-    
-    // Help system functionality
-    toggleHelp() {
-        this.helpVisible = !this.helpVisible;
-        if (this.helpVisible) {
-            this.helpOverlay.classList.remove('hidden');
-        } else {
-            this.helpOverlay.classList.add('hidden');
-        }
-    }
-    
-    showHelp() {
-        this.helpVisible = true;
-        this.helpOverlay.classList.remove('hidden');
-    }
-    
-    hideHelp() {
-        this.helpVisible = false;
-        this.helpOverlay.classList.add('hidden');
+
+    // Setup help tab event listeners
+    setupHelpTabListeners() {
+        // Tab button click handlers
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('help-tab-btn')) {
+                const tabName = e.target.getAttribute('data-tab');
+                this.switchHelpTab(tabName);
+            }
+        });
     }
     
     // Pause overlay functionality
@@ -547,9 +531,7 @@ window.ModernUI = class {
     setGame(game) {
         this.game = game;
         console.log('🎮 UI connected to game instance');
-    }
-
-    // Settings functionality
+    }    // Settings functionality
     toggleSettings() {
         if (!this.settingsVisible) {
             this.showSettings();
@@ -561,33 +543,31 @@ window.ModernUI = class {
     }
     
     showSettings() {
-        if (this.game) {
-            this.game.pause(); // Pause the game when settings are shown
-            console.log('⚙️ Settings opened, game paused');
-        }
         this.elements.settingsOverlay.classList.remove('hidden');
-    }
+        if (this.game) this.game.setOverlayOpen('settings', true);
+        console.log('⚙️ Settings opened');    }
     
     hideSettings() {
-        if (this.game) {
-            this.game.unpause(); // Unpause the game when settings are hidden
-            console.log('⚙️ Settings closed, game unpaused');
-        }
         this.elements.settingsOverlay.classList.add('hidden');
-    }    updateSettingsState(gameData) {
-        // Settings state synchronization (debug functionality removed)
+        if (this.game) this.game.setOverlayOpen('settings', false);
+        console.log('⚙️ Settings closed');
     }
     
-    // Upgrade system functionality
+    updateSettingsState(gameData) {
+        // Settings state synchronization (debug functionality removed)
+    }
+      // Upgrade system functionality
     showUpgradeMenu(upgradeChoices) {
         this.upgradeVisible = true;
         this.populateUpgradeChoices(upgradeChoices);
         this.elements.upgradeOverlay.classList.remove('hidden');
+        if (this.game) this.game.setOverlayOpen('upgrade', true);
     }
     
     hideUpgradeMenu() {
         this.upgradeVisible = false;
         this.elements.upgradeOverlay.classList.add('hidden');
+        if (this.game) this.game.setOverlayOpen('upgrade', false);
     }
     
     populateUpgradeChoices(choices) {
@@ -624,6 +604,46 @@ window.ModernUI = class {
             detail: { upgradeId: upgradeId }
         });
         document.dispatchEvent(event);
-          this.hideUpgradeMenu();
+        
+        this.hideUpgradeMenu();
+    }    // Help and Changelog System
+    toggleHelp() {
+        const helpOverlay = document.getElementById('helpOverlay');
+        if (!helpOverlay) return;
+
+        const isVisible = !helpOverlay.classList.contains('hidden');
+        
+        if (isVisible) {
+            // Hide help
+            helpOverlay.classList.add('hidden');
+            this.game?.setOverlayOpen('helpOverlay', false);
+        } else {
+            // Show help
+            helpOverlay.classList.remove('hidden');
+            this.game?.setOverlayOpen('helpOverlay', true);
+        }
+    }
+
+    toggleChangelog() {
+        const changelogOverlay = document.getElementById('changelogOverlay');
+        if (!changelogOverlay) return;
+
+        const isVisible = !changelogOverlay.classList.contains('hidden');
+        
+        if (isVisible) {
+            // Hide changelog
+            changelogOverlay.classList.add('hidden');
+            this.game?.setOverlayOpen('changelogOverlay', false);
+        } else {
+            // Show changelog
+            changelogOverlay.classList.remove('hidden');
+            this.game?.setOverlayOpen('changelogOverlay', true);
+        }
+    }
+
+    updateByteCoins(amount) {
+        if (this.elements.byteCoinDisplay) {
+            this.elements.byteCoinDisplay.textContent = `🪙 ${amount}`;
+        }
     }
 }

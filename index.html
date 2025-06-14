@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeuroCore: Byte Wars</title>    <link rel="icon" type="image/png" href="assets/Logos/NeuroCore Byte Wars Logo.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>NeuroCore: Byte Wars</title>    <link rel="icon" type="image/png" href="assets/Logos/NeuroCore Byte Wars Logo.png">
     <link rel="shortcut icon" type="image/png" href="assets/Logos/NeuroCore Byte Wars Logo.png">
     <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 </head>
 <body>    <!-- Studio Splash Screen -->
     <div id="studioSplash" class="splash-screen active">
@@ -40,6 +43,46 @@
             <div class="audio-prompt-text">Click to enable immersive sci-fi soundtrack</div>
             <button id="enableAudioBtn" class="audio-prompt-button">ENABLE AUDIO</button>
             <button id="continueWithoutAudioBtn" class="audio-prompt-button secondary">CONTINUE WITHOUT AUDIO</button>
+        </div>    </div>
+
+    <!-- Authentication Overlay -->
+    <div id="authOverlay" class="auth-overlay hidden">
+        <div class="auth-content">
+            <div class="auth-header">
+                <img src="assets/Logos/NeuroCore Byte Wars Logo.png" alt="NeuroCore Byte Wars" class="auth-logo">
+                <h2>Welcome to NeuroCore: Byte Wars</h2>
+                <p>Sign in to save your progress and compete on leaderboards</p>
+            </div>
+            
+            <div class="auth-buttons">
+                <button id="googleSignInBtn" class="auth-btn google-btn">
+                    <svg class="auth-icon" viewBox="0 0 24 24">
+                        <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+                
+                <button id="githubSignInBtn" class="auth-btn github-btn">
+                    <svg class="auth-icon" viewBox="0 0 24 24" fill="#fff">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    Continue with GitHub
+                </button>
+                
+                <button id="playOfflineBtn" class="auth-btn offline-btn">
+                    <svg class="auth-icon" viewBox="0 0 24 24" fill="#666">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Play Offline
+                </button>
+            </div>
+            
+            <div class="auth-footer">
+                <p>By signing in, you agree to our terms of service and privacy policy.</p>
+            </div>
         </div>
     </div>
 
@@ -143,141 +186,216 @@
             
 
             
-            <!-- Changelog Panel -->
-            <div class="changelog-overlay hidden" id="changelogOverlay">                <div class="changelog-panel">
-                    <div class="changelog-header">
-                        <div class="changelog-title">◤ NEUROCORE CHANGELOG ◥</div>
-                        <div class="changelog-version">v1.3.0 - Neural Enhancement Update</div>
-                    </div>
-                    <div class="changelog-content">                        <div class="changelog-section">
-                            <div class="changelog-section-title">◦ NEW FEATURES ◦</div>
-                            <div class="changelog-item">• **Survival Time Tracker** - Real-time timer showing time survived (MM:SS format)</div>
-                            <div class="changelog-item">• **Dual Audio System** - Loading Intro music for splash screens, Futuristic Action music for gameplay</div>
-                            <div class="changelog-item">• Complete difficulty system with 4 tiers (Easy/Medium/Hard/Extreme)</div>
-                            <div class="changelog-item">• Difficulty selection screen with detailed stats and descriptions</div>
-                            <div class="changelog-item">• Difficulty-based healing system with visual effects</div>
-                            <div class="changelog-item">• Change difficulty from game over screen with 'B' key</div>
-                            <div class="changelog-item">• Enhanced visual healing effects with green sparks and numbers</div>
-                            <div class="changelog-item">• Professional intro animation with studio splash screen</div>
-                        </div>
-
-                        <div class="changelog-section">
-                            <div class="changelog-section-title">◦ DIFFICULTY SYSTEM ◦</div>
-                            <div class="changelog-item">• Easy 🟢: 150 HP, weaker enemies, healing during waves</div>
-                            <div class="changelog-item">• Medium 🟡: 100 HP, balanced enemies, healing after waves</div>
-                            <div class="changelog-item">• Hard 🔴: 100 HP, tough enemies, healing every 3rd wave</div>
-                            <div class="changelog-item">• Extreme ☠️: 100 HP, brutal enemies, no healing ever</div>
-                            <div class="changelog-item">• Dynamic enemy stats: speed, health, damage based on difficulty</div>
-                            <div class="changelog-item">• Overclock charge rate and wave size scaling</div>
-                        </div>
-
-                        <div class="changelog-section">
-                            <div class="changelog-section-title">◦ MAJOR IMPROVEMENTS ◦</div>
-                            <div class="changelog-item">• Enhanced settings button visibility with pulsing animation</div>
-                            <div class="changelog-item">• Enhanced Neural Overclock system with visual effects</div>
-                            <div class="changelog-item">• Improved safe zone mechanics with timer system</div>
-                            <div class="changelog-item">• Added wave-based enemy spawning system</div>
-                            <div class="changelog-item">• New BitBug enemy with dash attacks</div>
-                            <div class="changelog-item">• New Syntax Breaker enemy with control disruption</div>
-                            <div class="changelog-item">• Smooth studio logo to game logo transition sequence</div>
-                        </div>                        <div class="changelog-section">
-                            <div class="changelog-section-title">◦ VISUAL & UI ◦</div>
-                            <div class="changelog-item">• Added survival time display to combat status panel</div>
-                            <div class="changelog-item">• Audio fade-out effects when game starts</div>
-                            <div class="changelog-item">• Fixed UI panel overlapping issues</div>
-                            <div class="changelog-item">• Modern UI overlay system</div>
-                            <div class="changelog-item">• Tactical minimap with real-time tracking</div>
-                            <div class="changelog-item">• Enhanced visual effects system</div>
-                            <div class="changelog-item">• Cyberpunk-styled difficulty selection interface</div>
-                            <div class="changelog-item">• Improved game over screen with multiple options</div>
-                        </div>
-                          <div class="changelog-section">
-                            <div class="changelog-section-title">◦ CONTROLS ◦</div>
-                            <div class="changelog-item">• WASD / Arrow Keys - Movement</div>
-                            <div class="changelog-item">• Mouse - Aim and shoot</div>
-                            <div class="changelog-item">• SPACE - Neural Dash</div>
-                            <div class="changelog-item">• Q - Activate Overclock</div>
-                            <div class="changelog-item">• H - Toggle Help System</div>
-                            <div class="changelog-item">• C - Toggle Changelog</div>
-                            <div class="changelog-item">• P - Pause/Resume Game</div>
-                            <div class="changelog-item">• R - Restart (when game over)</div>
-                            <div class="changelog-item">• D - Change Difficulty (when game over)</div>
-                        </div>
-                    </div>                    <div class="changelog-footer">
-                        <div class="changelog-instruction">Press C to close</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Help System Overlay -->
+            <!-- Changelog Panel -->            <!-- Unified Help System with Tabs -->
             <div class="help-overlay hidden" id="helpOverlay">
                 <div class="help-panel">
                     <div class="help-header">
-                        <div class="help-title">◤ NEUROCORE HELP SYSTEM ◥</div>
-                        <div class="help-version">Complete Game Guide & Information</div>
+                        <div class="help-title">◤ NEUROCORE INFORMATION SYSTEM ◥</div>
+                        <div class="help-version">Complete Game Guide & Documentation</div>
                     </div>
+                    
+                    <!-- Tab Navigation -->
+                    <div class="help-tabs">
+                        <button class="help-tab-btn active" data-tab="about">ABOUT</button>
+                        <button class="help-tab-btn" data-tab="controls">CONTROLS</button>
+                        <button class="help-tab-btn" data-tab="changelog">CHANGELOG</button>
+                        <button class="help-tab-btn" data-tab="credits">CREDITS</button>
+                    </div>
+                    
                     <div class="help-content">
-                        <div class="help-section">
-                            <div class="help-section-title">◦ HOW TO PLAY ◦</div>
-                            <div class="help-item">• **Objective**: Survive as long as possible against waves of neural viruses</div>
-                            <div class="help-item">• **Combat**: Aim with mouse, click to shoot, eliminate all enemies in each wave</div>
-                            <div class="help-item">• **Survival**: Use Neural Dash (SPACE) to escape danger and avoid enemy attacks</div>
-                            <div class="help-item">• **Power System**: Build Overclock charge by dealing damage, activate with Q for temporary invincibility</div>
-                            <div class="help-item">• **Safe Zones**: Enter blue safe zones for temporary protection from enemies</div>
-                            <div class="help-item">• **Upgrades**: Choose neural enhancements between waves to improve your capabilities</div>
-                            <div class="help-item">• **Strategy**: Balance aggressive combat with strategic retreats and resource management</div>
+                        <!-- About Tab -->
+                        <div class="help-tab-content active" id="aboutTab">
+                            <div class="help-section">
+                                <div class="help-section-title">◦ HOW TO PLAY ◦</div>
+                                <div class="help-item">• **Objective**: Survive as long as possible against waves of neural viruses</div>
+                                <div class="help-item">• **Combat**: Aim with mouse, click to shoot, eliminate all enemies in each wave</div>
+                                <div class="help-item">• **Survival**: Use Neural Dash (SPACE) to escape danger and avoid enemy attacks</div>
+                                <div class="help-item">• **Overclock**: Build charge by dealing damage, activate with Q for powerful transformation</div>
+                                <div class="help-item">• **Transformation**: During Overclock, your neural core transforms into the ultimate OverClock form</div>
+                                <div class="help-item">• **Safe Zones**: Enter blue safe zones for temporary protection from enemies</div>
+                                <div class="help-item">• **Upgrades**: Choose neural enhancements between waves to improve your capabilities</div>
+                                <div class="help-item">• **Strategy**: Balance aggressive combat with strategic retreats and resource management</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ GAME INFO ◦</div>
+                                <div class="help-item">• **NeuroCore: Byte Wars** - A cyberpunk survival shooter game</div>
+                                <div class="help-item">• **Genre**: Top-down arcade shooter with roguelike progression</div>
+                                <div class="help-item">• **Theme**: Neural network defense against digital viruses</div>
+                                <div class="help-item">• **Features**: Wave-based combat, upgrade system, multiple difficulties</div>
+                                <div class="help-item">• **Developed by**: InfinityByte Studios</div>
+                                <div class="help-item">• **Version**: v1.3.0 - Neural Enhancement Update</div>
+                                <div class="help-item">• **Engine**: HTML5 Canvas with modern web technologies</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ DIFFICULTY SYSTEM ◦</div>
+                                <div class="help-item">• **Easy 🟢**: 150 HP, weaker enemies, healing during waves</div>
+                                <div class="help-item">• **Medium 🟡**: 100 HP, balanced enemies, healing after waves</div>
+                                <div class="help-item">• **Hard 🔴**: 100 HP, tough enemies, healing every 3rd wave</div>
+                                <div class="help-item">• **Extreme ☠️**: 100 HP, brutal enemies, no healing ever</div>
+                                <div class="help-item">• **Dynamic Scaling**: Enemy stats change based on selected difficulty</div>
+                                <div class="help-item">• **Change Difficulty**: Press B on game over screen to switch</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ SKIN SHOP ◦</div>
+                                <div class="help-item">• **ByteCoins** - Earn by defeating enemies and surviving waves</div>
+                                <div class="help-item">• **M Key** - Opens the skin shop to buy and equip new appearances</div>
+                                <div class="help-item">• **Player Skins** - Different visual styles for your neural core</div>
+                                <div class="help-item">• **Visual Effects** - Special particle effects and auras</div>
+                                <div class="help-item">• **Special Edition** - Exclusive rare skins with unique features</div>
+                                <div class="help-item">• **Persistent** - Owned items are saved and available after restart</div>
+                            </div>
                         </div>
 
-                        <div class="help-section">
-                            <div class="help-section-title">◦ CONTROLS ◦</div>
-                            <div class="help-item">• **WASD / Arrow Keys** - Movement in all directions</div>
-                            <div class="help-item">• **Mouse** - Aim and shoot (click to fire bullets)</div>
-                            <div class="help-item">• **SPACE** - Neural Dash (quick escape move with cooldown)</div>
-                            <div class="help-item">• **Q** - Activate Neural Overclock (when charged)</div>
-                            <div class="help-item">• **P** - Pause/Resume Game</div>
-                            <div class="help-item">• **H** - Toggle Help System (this menu)</div>
-                            <div class="help-item">• **C** - Toggle Changelog</div>
-                            <div class="help-item">• **ESC** - Close Settings Menu</div>
-                            <div class="help-item">• **R** - Restart Game (during pause or game over)</div>
-                            <div class="help-item">• **B** - Change Difficulty (when game over)</div>
+                        <!-- Controls Tab -->
+                        <div class="help-tab-content" id="controlsTab">
+                            <div class="help-section">
+                                <div class="help-section-title">◦ MOVEMENT & COMBAT ◦</div>
+                                <div class="help-item">• **WASD / Arrow Keys** - Movement in all directions</div>
+                                <div class="help-item">• **Mouse** - Aim and shoot (click to fire bullets)</div>
+                                <div class="help-item">• **SPACE** - Neural Dash (quick escape move with cooldown)</div>
+                                <div class="help-item">• **Q** - Activate Neural Overclock (when charged)</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ INTERFACE & MENUS ◦</div>
+                                <div class="help-item">• **P** - Pause/Resume Game</div>
+                                <div class="help-item">• **M** - Open Skin Shop (buy and equip items)</div>
+                                <div class="help-item">• **H** - Toggle Help System (this menu)</div>
+                                <div class="help-item">• **ESC** - Close Settings Menu or overlays</div>
+                                <div class="help-item">• **Settings Button** - Access Neural Settings panel</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ GAME STATES ◦</div>
+                                <div class="help-item">• **R** - Restart Game (during pause or game over)</div>
+                                <div class="help-item">• **B** - Change Difficulty (when game over)</div>
+                                <div class="help-item">• **Enter** - Confirm selections in menus</div>
+                                <div class="help-item">• **Tab** - Switch between upgrade options</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ DEBUG & DEVELOPMENT ◦</div>
+                                <div class="help-item">• **1** - Debug mode toggle (password protected)</div>
+                                <div class="help-item">• **1** (in debug) - Add 100 ByteCoins for testing</div>
+                                <div class="help-item">• **Ctrl+G** - Alternative ByteCoin cheat (legacy)</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ CUSTOMIZABLE CONTROLS ◦</div>
+                                <div class="help-item">• **Neural Settings** - Customize key bindings</div>
+                                <div class="help-item">• **Reset Controls** - Restore default key mappings</div>
+                                <div class="help-item">• **Conflict Detection** - Prevents duplicate key assignments</div>
+                                <div class="help-item">• **Persistent Storage** - Custom bindings saved automatically</div>
+                            </div>
                         </div>
 
-                        <div class="help-section">
-                            <div class="help-section-title">◦ ABOUT ◦</div>
-                            <div class="help-item">• **NeuroCore: Byte Wars** - A cyberpunk survival shooter game</div>
-                            <div class="help-item">• **Genre**: Top-down arcade shooter with roguelike progression</div>
-                            <div class="help-item">• **Theme**: Neural network defense against digital viruses</div>
-                            <div class="help-item">• **Features**: Wave-based combat, upgrade system, multiple difficulties</div>
-                            <div class="help-item">• **Developed by**: InfinityByte Studios</div>
-                            <div class="help-item">• **Version**: v1.3.0 - Neural Enhancement Update</div>
-                            <div class="help-item">• **Engine**: HTML5 Canvas with modern web technologies</div>
+                        <!-- Changelog Tab -->
+                        <div class="help-tab-content" id="changelogTab">
+                            <div class="help-section">
+                                <div class="help-section-title">◦ v1.3.0 - NEURAL ENHANCEMENT UPDATE ◦</div>
+                                <div class="help-item">• **Survival Time Tracker** - Real-time timer showing time survived (MM:SS format)</div>
+                                <div class="help-item">• **Dual Audio System** - Loading Intro music for splash screens, Futuristic Action music for gameplay</div>
+                                <div class="help-item">• **Complete Difficulty System** - 4 tiers (Easy/Medium/Hard/Extreme) with unique stats</div>
+                                <div class="help-item">• **ByteCoin Shop System** - Earn and spend currency on player skins and effects</div>
+                                <div class="help-item">• **Custom Controls System** - Rebind keys in Neural Settings panel</div>
+                                <div class="help-item">• **Debug Mode** - Password-protected developer tools for testing</div>
+                                <div class="help-item">• **Enhanced OverClock** - Visual transformation with special sprite</div>
+                                <div class="help-item">• **Professional Intro** - Studio splash screen with logo animation</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ SHOP & COSMETICS ◦</div>
+                                <div class="help-item">• **Player Skins** - Multiple neural core appearances (Cyber Guardian, Quantum Striker, etc.)</div>
+                                <div class="help-item">• **Visual Effects** - Particle trails, lightning auras, and special effects</div>
+                                <div class="help-item">• **Special Edition** - Exclusive Developer Core and Neural God skins</div>
+                                <div class="help-item">• **Persistent Unlocks** - All purchased items saved permanently</div>
+                                <div class="help-item">• **Auto-Pause Shop** - Game pauses automatically when shop is open</div>
+                                <div class="help-item">• **M Key Toggle** - Open/close shop with M key or custom binding</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ TECHNICAL IMPROVEMENTS ◦</div>
+                                <div class="help-item">• **Difficulty-Based Healing** - Smart healing system with visual green spark effects</div>
+                                <div class="help-item">• **Dynamic Enemy Stats** - Speed, health, damage based on selected difficulty</div>
+                                <div class="help-item">• **Enhanced Safe Zones** - Blue protective areas with timer system</div>
+                                <div class="help-item">• **New Enemy Types** - BitBug with dash attacks, Syntax Breaker with control disruption</div>
+                                <div class="help-item">• **Wave-Based Spawning** - Structured enemy waves with progression</div>
+                                <div class="help-item">• **Audio Crossfading** - Smooth transitions between music tracks</div>
+                                <div class="help-item">• **Overclock Charge Scaling** - Charge rate adjusts based on difficulty</div>
+                                <div class="help-item">• **Modern UI Overlays** - Improved panel system with better organization</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ VISUAL & UI ENHANCEMENTS ◦</div>
+                                <div class="help-item">• **Survival Time Display** - Added to combat status panel with MM:SS format</div>
+                                <div class="help-item">• **Settings Button Animation** - Pulsing visibility enhancement</div>
+                                <div class="help-item">• **Cyberpunk Difficulty UI** - Styled difficulty selection interface</div>
+                                <div class="help-item">• **Enhanced Game Over Screen** - Multiple options with clear instructions</div>
+                                <div class="help-item">• **Tactical Minimap** - Real-time tracking of position and enemies</div>
+                                <div class="help-item">• **Visual Effects System** - Improved particle systems and animations</div>
+                                <div class="help-item">• **UI Panel Fixes** - Resolved overlapping issues and layout problems</div>
+                                <div class="help-item">• **Studio Logo Transition** - Smooth sequence from studio to game logo</div>
+                            </div>
                         </div>
 
-                        <div class="help-section">
-                            <div class="help-section-title">◦ CHANGELOG ◦</div>
-                            <div class="help-item">• **Latest Update**: Enhanced audio system with dual music tracks</div>
-                            <div class="help-item">• **New Features**: Survival time tracker, enhanced difficulty system</div>
-                            <div class="help-item">• **Improvements**: Better UI layout, settings button visibility</div>
-                            <div class="help-item">• **Audio**: Professional intro music and gameplay background music</div>
-                            <div class="help-item">• **Technical**: Crossfade audio transitions, improved performance</div>
-                            <div class="help-item">• **Press C key to view detailed changelog**</div>
-                        </div>
+                        <!-- Credits Tab -->
+                        <div class="help-tab-content" id="creditsTab">
+                            <div class="help-section">
+                                <div class="help-section-title">◦ DEVELOPMENT TEAM ◦</div>
+                                <div class="help-item">• **Game Development**: InfinityByte Studios</div>
+                                <div class="help-item">• **Programming**: JavaScript/HTML5 Canvas Engine</div>
+                                <div class="help-item">• **Game Design**: Neural network cyberpunk theme</div>
+                                <div class="help-item">• **Systems Design**: Combat, progression, and difficulty balancing</div>
+                                <div class="help-item">• **UI/UX Design**: Modern cyberpunk interface styling</div>
+                                <div class="help-item">• **Quality Assurance**: Cross-browser testing and optimization</div>
+                            </div>
 
-                        <div class="help-section">
-                            <div class="help-section-title">◦ CREDITS ◦</div>
-                            <div class="help-item">• **Game Development**: InfinityByte Studios</div>
-                            <div class="help-item">• **Programming**: JavaScript/HTML5 Canvas Engine</div>
-                            <div class="help-item">• **Audio**: Background music from Pixabay</div>
-                            <div class="help-item">• **Music Tracks**:</div>
-                            <div class="help-item">  - "Loading Intro.mp3" (Intro/Splash screen music)</div>
-                            <div class="help-item">  - "Futuristic Action Cinematic Electronic Loop" (Gameplay music)</div>
-                            <div class="help-item">• **Special Thanks**: Pixabay community for royalty-free audio content</div>
-                            <div class="help-item">• **Technology**: Modern web standards, responsive design</div>
-                            <div class="help-item">• **Testing**: Cross-browser compatibility and performance optimization</div>
+                            <div class="help-section">
+                                <div class="help-section-title">◦ AUDIO & MUSIC ◦</div>
+                                <div class="help-item">• **Audio Source**: Background music from Pixabay</div>
+                                <div class="help-item">• **Intro Track**: "Loading Intro.mp3" (Splash screen music)</div>
+                                <div class="help-item">• **Gameplay Track**: "Futuristic Action Cinematic Electronic Loop"</div>
+                                <div class="help-item">• **Additional Track**: "Sci-Fi Intro No Copyright Music"</div>
+                                <div class="help-item">• **Audio License**: Royalty-free content from Pixabay community</div>
+                                <div class="help-item">• **Audio Implementation**: Crossfade system with seamless transitions</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ GRAPHICS & ASSETS ◦</div>
+                                <div class="help-item">• **Studio Logo**: InfinityByte Studios 1920×1080 branding</div>
+                                <div class="help-item">• **Game Logo**: NeuroCore Byte Wars custom logo design</div>
+                                <div class="help-item">• **Player Sprites**: Neural core designs and OverClock transformation</div>
+                                <div class="help-item">• **Enemy Sprites**: Data Wisp and various neural virus designs</div>
+                                <div class="help-item">• **Buyable Skins**: 6 unique player appearance variations</div>
+                                <div class="help-item">• **Visual Effects**: Particle systems, healing effects, combat feedback</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ TECHNOLOGY & TOOLS ◦</div>
+                                <div class="help-item">• **Engine**: Custom HTML5 Canvas engine</div>
+                                <div class="help-item">• **Languages**: JavaScript ES6+, HTML5, CSS3</div>
+                                <div class="help-item">• **Features**: Responsive design, modern web standards</div>
+                                <div class="help-item">• **Storage**: LocalStorage for persistent game data</div>
+                                <div class="help-item">• **Performance**: Optimized rendering and memory management</div>
+                                <div class="help-item">• **Compatibility**: Cross-browser support for modern browsers</div>
+                            </div>
+
+                            <div class="help-section">
+                                <div class="help-section-title">◦ SPECIAL THANKS ◦</div>
+                                <div class="help-item">• **Pixabay Community** - For providing high-quality royalty-free audio</div>
+                                <div class="help-item">• **Open Source Community** - For web development tools and resources</div>
+                                <div class="help-item">• **Beta Testers** - For feedback and bug reports during development</div>
+                                <div class="help-item">• **Players** - For supporting indie game development</div>
+                                <div class="help-item">• **Web Standards** - HTML5, Canvas API, and modern JavaScript features</div>
+                            </div>
                         </div>
                     </div>
+                    
                     <div class="help-footer">
-                        <div class="help-instruction">Press H to close</div>
+                        <div class="help-instruction">Press H to close • Use tabs to navigate sections</div>
                     </div>
                 </div>
             </div>
@@ -286,8 +404,8 @@
                     <div class="pause-title">◤ GAME PAUSED ◥</div>                    <div class="pause-instructions">
                         <div class="pause-instruction">Press P to Resume</div>
                         <div class="pause-instruction">Press R to Restart Game</div>
-                        <div class="pause-instruction">Press H for Help System</div>
-                        <div class="pause-instruction">Press C for Changelog</div>
+                        <div class="pause-instruction">Press H for Information System</div>
+                        <div class="pause-instruction">Press C for Changelog Tab</div>
                     </div>
                 </div>
             </div>
@@ -324,16 +442,52 @@
                                 <input type="checkbox" id="minimapToggle" class="settings-checkbox" checked>
                             </div>
                         </div>
-                        
-                        <div class="settings-section">
+                          <div class="settings-section">
                             <div class="settings-section-title">CONTROLS</div>
                             <div class="settings-controls">
-                                <div class="control-item">Movement: WASD / Arrow Keys</div>
-                                <div class="control-item">Aim & Shoot: Mouse</div>
-                                <div class="control-item">Dash: Space</div>
-                                <div class="control-item">Overclock: Q</div>
-                                <div class="control-item">Pause: P</div>
-                                <div class="control-item">Changelog: C</div>
+                                <div class="control-binding">
+                                    <span class="control-label">Move Up:</span>
+                                    <button class="key-bind-btn" data-action="moveUp" data-default="KeyW">W</button>
+                                </div>
+                                <div class="control-binding">
+                                    <span class="control-label">Move Down:</span>
+                                    <button class="key-bind-btn" data-action="moveDown" data-default="KeyS">S</button>
+                                </div>
+                                <div class="control-binding">
+                                    <span class="control-label">Move Left:</span>
+                                    <button class="key-bind-btn" data-action="moveLeft" data-default="KeyA">A</button>
+                                </div>
+                                <div class="control-binding">
+                                    <span class="control-label">Move Right:</span>
+                                    <button class="key-bind-btn" data-action="moveRight" data-default="KeyD">D</button>
+                                </div>
+                                <div class="control-binding">
+                                    <span class="control-label">Neural Dash:</span>
+                                    <button class="key-bind-btn" data-action="dash" data-default="Space">SPACE</button>
+                                </div>
+                                <div class="control-binding">
+                                    <span class="control-label">Overclock:</span>
+                                    <button class="key-bind-btn" data-action="overclock" data-default="KeyQ">Q</button>
+                                </div>
+                                <div class="control-binding">
+                                    <span class="control-label">Pause Game:</span>
+                                    <button class="key-bind-btn" data-action="pause" data-default="KeyP">P</button>
+                                </div>
+                                <div class="control-binding">
+                                    <span class="control-label">Open Shop:</span>
+                                    <button class="key-bind-btn" data-action="shop" data-default="KeyM">M</button>
+                                </div>
+                                <div class="control-binding">
+                                    <span class="control-label">Help System:</span>
+                                    <button class="key-bind-btn" data-action="help" data-default="KeyH">H</button>
+                                </div>
+                                <div class="control-binding">
+                                    <span class="control-label">Changelog:</span>
+                                    <button class="key-bind-btn" data-action="changelog" data-default="KeyC">C</button>
+                                </div>
+                                <div class="control-reset">
+                                    <button class="reset-controls-btn" id="resetControlsBtn">Reset to Defaults</button>
+                                </div>
                             </div>
                         </div>
                         
@@ -440,9 +594,11 @@
     <script src="js/visualEffects.js"></script>
     <script src="js/difficultyManager.js"></script>
     <script src="js/upgradeSystem.js"></script>    <!-- Game Management (depends on core systems) -->
-    <script src="js/enemyManager.js"></script>
-    <script src="js/modernUI.js"></script>
+    <script src="js/enemyManager.js"></script>    <script src="js/modernUI.js"></script>
     <script src="js/player.js"></script>
+
+    <!-- Authentication System -->
+    <script src="js/auth.js"></script>
 
     <!-- Main Game -->
     <script src="js/game.js"></script>
@@ -453,6 +609,11 @@
         window.addEventListener('load', function() {
             console.log("🎮 Starting game...");
             try {
+                // Initialize AuthManager first
+                window.authManager = new AuthManager();
+                console.log("🔐 AuthManager initialized!");
+                
+                // Initialize game
                 window.game = new Game();
                 console.log("🎮 Game successfully initialized!");
             } catch (error) {
@@ -460,5 +621,372 @@
             }
         });
     </script>
+    
+    <!-- Shop Overlay -->
+            <div class="shop-overlay hidden" id="shopOverlay">
+                <div class="shop-panel">
+                    <div class="shop-header">
+                        <div class="shop-title">◤ NEURAL SKIN SHOP ◥</div>
+                        <div class="shop-subtitle">Customize your neural interface with premium skins</div>
+                        <div class="shop-currency">
+                            <div class="shop-balance">Balance: <span id="shopBalance">🪙 0</span></div>
+                        </div>
+                        <button class="shop-close-btn" id="shopCloseBtn">✕</button>
+                    </div>
+                    
+                    <div class="shop-content">
+                        <div class="shop-categories">
+                            <button class="shop-category-btn active" data-category="player">PLAYER SKINS</button>
+                            <button class="shop-category-btn" data-category="effects">VISUAL EFFECTS</button>
+                            <button class="shop-category-btn" data-category="special">SPECIAL EDITION</button>
+                        </div>
+                          <div class="shop-items-container">
+                            <!-- Player Skins Section -->
+                            <div class="shop-section" id="playerSkins">
+                                <div class="shop-item" data-skin="default">
+                                    <div class="shop-item-preview">
+                                        <img src="assets/Sprites/sprite_0.png" alt="Default Neural Core" class="skin-preview-image">
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Default Neural Core</div>
+                                        <div class="shop-item-description">Standard neural interface design</div>
+                                        <div class="shop-item-price">FREE</div>
+                                    </div>
+                                    <button class="shop-item-btn equipped">EQUIPPED</button>
+                                </div>
+                                
+                                <div class="shop-item" data-skin="sprite_2">
+                                    <div class="shop-item-preview">
+                                        <img src="assets/Sprites/Buyable Sprites/sprite_2.png" alt="Cyber Guardian" class="skin-preview-image">
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Cyber Guardian</div>
+                                        <div class="shop-item-description">Advanced cyber defense core with enhanced protection</div>
+                                        <div class="shop-item-price">🪙 50</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="50">BUY</button>
+                                </div>
+                                
+                                <div class="shop-item" data-skin="sprite_4">
+                                    <div class="shop-item-preview">
+                                        <img src="assets/Sprites/Buyable Sprites/sprite_4.png" alt="Quantum Striker" class="skin-preview-image">
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Quantum Striker</div>
+                                        <div class="shop-item-description">High-speed quantum processor with tactical advantages</div>
+                                        <div class="shop-item-price">🪙 75</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="75">BUY</button>
+                                </div>
+                                
+                                <div class="shop-item" data-skin="sprite_5">
+                                    <div class="shop-item-preview">
+                                        <img src="assets/Sprites/Buyable Sprites/sprite_5.png" alt="Neural Phantom" class="skin-preview-image">
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Neural Phantom</div>
+                                        <div class="shop-item-description">Stealth-enhanced neural core with shadow capabilities</div>
+                                        <div class="shop-item-price">🪙 100</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="100">BUY</button>
+                                </div>
+                                
+                                <div class="shop-item" data-skin="sprite_6">
+                                    <div class="shop-item-preview">
+                                        <img src="assets/Sprites/Buyable Sprites/sprite_6.png" alt="Data Nexus" class="skin-preview-image">
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Data Nexus</div>
+                                        <div class="shop-item-description">Advanced data processing core with network abilities</div>
+                                        <div class="shop-item-price">🪙 150</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="150">BUY</button>
+                                </div>
+                                  <div class="shop-item" data-skin="sprite_7">
+                                    <div class="shop-item-preview">
+                                        <img src="assets/Sprites/Buyable Sprites/sprite_7.png" alt="Omega Protocol" class="skin-preview-image">
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Omega Protocol</div>
+                                        <div class="shop-item-description">Ultimate military-grade neural interface</div>
+                                        <div class="shop-item-price">🪙 200</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="200">BUY</button>
+                                </div>                                <!-- OG Circle Style Skins -->
+                                <div class="shop-section-divider">
+                                    <div class="shop-section-title">OG CLASSIC CORES</div>
+                                </div>
+
+                                <div class="shop-item" data-skin="og_cyan">
+                                    <div class="shop-item-preview">
+                                        <div class="og-skin-preview" style="background: #00ffff;"></div>
+                                    </div>                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Cyan Core</div>
+                                        <div class="shop-item-description">Default classic neural core in cyan blue</div>
+                                        <div class="shop-item-price">🪙 FREE</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="0">OWNED</button>
+                                </div>
+
+                                <div class="shop-item" data-skin="og_red">
+                                    <div class="shop-item-preview">
+                                        <div class="og-skin-preview" style="background: #ff0000;"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Crimson Core</div>
+                                        <div class="shop-item-description">Classic neural core in blazing red</div>
+                                        <div class="shop-item-price">🪙 25</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="25">BUY</button>
+                                </div>
+
+                                <div class="shop-item" data-skin="og_green">
+                                    <div class="shop-item-preview">
+                                        <div class="og-skin-preview" style="background: #00ff00;"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Emerald Core</div>
+                                        <div class="shop-item-description">Classic neural core in vibrant green</div>
+                                        <div class="shop-item-price">🪙 25</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="25">BUY</button>
+                                </div>
+
+                                <div class="shop-item" data-skin="og_blue">
+                                    <div class="shop-item-preview">
+                                        <div class="og-skin-preview" style="background: #0080ff;"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Azure Core</div>
+                                        <div class="shop-item-description">Classic neural core in electric blue</div>
+                                        <div class="shop-item-price">🪙 25</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="25">BUY</button>
+                                </div>
+
+                                <div class="shop-item" data-skin="og_purple">
+                                    <div class="shop-item-preview">
+                                        <div class="og-skin-preview" style="background: #8000ff;"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Violet Core</div>
+                                        <div class="shop-item-description">Classic neural core in mystic purple</div>
+                                        <div class="shop-item-price">🪙 30</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="30">BUY</button>
+                                </div>
+
+                                <div class="shop-item" data-skin="og_orange">
+                                    <div class="shop-item-preview">
+                                        <div class="og-skin-preview" style="background: #ff8000;"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Solar Core</div>
+                                        <div class="shop-item-description">Classic neural core in bright orange</div>
+                                        <div class="shop-item-price">🪙 30</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="30">BUY</button>
+                                </div>
+
+                                <div class="shop-item" data-skin="og_pink">
+                                    <div class="shop-item-preview">
+                                        <div class="og-skin-preview" style="background: #ff00ff;"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Magenta Core</div>
+                                        <div class="shop-item-description">Classic neural core in hot pink</div>
+                                        <div class="shop-item-price">🪙 35</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="35">BUY</button>
+                                </div>
+
+                                <div class="shop-item" data-skin="og_yellow">
+                                    <div class="shop-item-preview">
+                                        <div class="og-skin-preview" style="background: #ffff00;"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Golden Core</div>
+                                        <div class="shop-item-description">Classic neural core in brilliant yellow</div>
+                                        <div class="shop-item-price">🪙 35</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="35">BUY</button>
+                                </div>
+
+                                <div class="shop-item" data-skin="og_lime">
+                                    <div class="shop-item-preview">
+                                        <div class="og-skin-preview" style="background: #80ff00;"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Neon Core</div>
+                                        <div class="shop-item-description">Classic neural core in electric lime</div>
+                                        <div class="shop-item-price">🪙 40</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="40">BUY</button>
+                                </div>
+
+                                <div class="shop-item" data-skin="og_rainbow">
+                                    <div class="shop-item-preview">
+                                        <div class="og-skin-preview rainbow-preview"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Prismatic Core</div>
+                                        <div class="shop-item-description">Classic neural core with shifting rainbow colors</div>
+                                        <div class="shop-item-price">🪙 60</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="60">BUY</button>
+                                </div>
+                            </div>
+                              <!-- Visual Effects Section -->
+                            <div class="shop-section hidden" id="effectsSkins">
+                                <div class="shop-item" data-skin="particle-trail">
+                                    <div class="shop-item-preview">
+                                        <div class="effect-preview particle-effect"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Particle Trail</div>
+                                        <div class="shop-item-description">Leaves glowing particle trails when moving</div>
+                                        <div class="shop-item-price">🪙 80</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="80">BUY</button>
+                                </div>
+                                
+                                <div class="shop-item" data-skin="lightning">
+                                    <div class="shop-item-preview">
+                                        <div class="effect-preview lightning-effect"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Lightning Aura</div>
+                                        <div class="shop-item-description">Electric lightning surrounds your core</div>
+                                        <div class="shop-item-price">🪙 120</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="120">BUY</button>
+                                </div>
+                            </div>
+                              <!-- Special Edition Section -->
+                            <div class="shop-section hidden" id="specialSkins">
+                                <div class="shop-item" data-skin="developer">
+                                    <div class="shop-item-preview">
+                                        <div class="skin-preview developer-skin"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Developer Core</div>
+                                        <div class="shop-item-description">Exclusive InfinityByte Studios edition</div>
+                                        <div class="shop-item-price">🪙 500</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="500">BUY</button>
+                                </div>
+                                
+                                <div class="shop-item" data-skin="legendary">
+                                    <div class="shop-item-preview">
+                                        <div class="skin-preview legendary-skin"></div>
+                                    </div>
+                                    <div class="shop-item-info">
+                                        <div class="shop-item-name">Neural God</div>
+                                        <div class="shop-item-description">Ultimate legendary skin with divine effects</div>
+                                        <div class="shop-item-price">🪙 1000</div>
+                                    </div>
+                                    <button class="shop-item-btn" data-cost="1000">BUY</button>                                </div>
+                            </div>
+                        </div>
+                    </div>
+                      <div class="shop-footer">
+                        <div class="shop-instruction">Press M to close shop • Skins are permanently unlocked</div>
+                    </div>
+                </div>
+            </div>
+
+    <!-- Help/Info Overlay -->
+    <div id="helpOverlay" class="overlay hidden">
+        <div class="overlay-content">
+            <div class="overlay-header">
+                <h2>HELP & INFO</h2>
+                <button class="close-btn" onclick="game.ui.toggleHelp()">×</button>
+            </div>
+            <div class="overlay-body">
+                <div class="help-section">
+                    <h3>🎯 OBJECTIVE</h3>
+                    <p>Survive endless waves of digital enemies while defending your neural core. Collect ByteCoins to upgrade your abilities and purchase new skins and visual effects.</p>
+                </div>
+                
+                <div class="help-section">
+                    <h3>🎮 CONTROLS</h3>
+                    <div class="controls-grid">
+                        <div class="control-item"><span class="key">W A S D</span> Move</div>
+                        <div class="control-item"><span class="key">SPACE</span> Dash</div>
+                        <div class="control-item"><span class="key">Q</span> Neural Overclock</div>
+                        <div class="control-item"><span class="key">P</span> Pause</div>
+                        <div class="control-item"><span class="key">M</span> Shop</div>
+                        <div class="control-item"><span class="key">H</span> Help</div>
+                        <div class="control-item"><span class="key">C</span> Changelog</div>
+                    </div>
+                </div>
+                
+                <div class="help-section">
+                    <h3>⚡ NEURAL SYSTEMS</h3>
+                    <ul>
+                        <li><strong>Neural Dash:</strong> Quick movement ability to dodge enemies</li>
+                        <li><strong>Neural Overclock:</strong> Temporary boost to damage and speed</li>
+                        <li><strong>Safe Zone:</strong> Brief period of invulnerability between waves</li>
+                        <li><strong>Auto-Fire:</strong> Your weapon automatically targets nearby enemies</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <h3>🛒 SHOP SYSTEM</h3>
+                    <ul>
+                        <li><strong>Skins:</strong> Cosmetic upgrades that change your appearance</li>
+                        <li><strong>Visual Effects:</strong> Special particle effects (only one can be equipped at a time)</li>
+                        <li><strong>Special Edition:</strong> Exclusive premium skins with unique effects</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Changelog Overlay -->
+    <div id="changelogOverlay" class="overlay hidden">
+        <div class="overlay-content">
+            <div class="overlay-header">
+                <h2>CHANGELOG</h2>
+                <button class="close-btn" onclick="game.ui.toggleChangelog()">×</button>
+            </div>
+            <div class="overlay-body">
+                <div class="changelog-entry">
+                    <h3>Version 1.2.0 - Current</h3>
+                    <ul>
+                        <li>✅ Removed Lightning Aura visual effect from shop</li>
+                        <li>✅ Fixed visual effects system - only one effect can be equipped at a time</li>
+                        <li>✅ Enhanced player skins with visual impact</li>
+                        <li>✅ Updated Data Wisp enemy to use sprite graphics</li>
+                        <li>✅ Improved UI and save/load system</li>
+                        <li>✅ Added help system and changelog</li>
+                    </ul>
+                </div>
+                
+                <div class="changelog-entry">
+                    <h3>Version 1.1.0</h3>
+                    <ul>
+                        <li>🎨 Implemented visual effects system</li>
+                        <li>🛒 Enhanced shop with visual effects category</li>
+                        <li>💰 ByteCoin economy system</li>
+                        <li>🎯 Auto-targeting weapon system</li>
+                        <li>⚡ Neural Overclock system</li>
+                    </ul>
+                </div>
+                
+                <div class="changelog-entry">
+                    <h3>Version 1.0.0</h3>
+                    <ul>
+                        <li>🎮 Core gameplay mechanics</li>
+                        <li>👾 Enemy spawning and wave system</li>
+                        <li>🛒 Player skin shop system</li>
+                        <li>📊 Scoring and survival tracking</li>
+                        <li>🎵 Audio system with dynamic music</li>
+                        <li>💾 Save/load progress system</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

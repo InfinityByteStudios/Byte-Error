@@ -6,21 +6,27 @@ window.Game = class {
         
         // Initialize audio manager
         this.audioManager = new AudioManager();
-        
-        // Set up dynamic canvas resizing
+          // Set up dynamic canvas resizing
         this.setupCanvasResize();
           // Initialize game systems
         this.arena = new Arena(this.canvas.width, this.canvas.height);
-        this.input = new InputManager();
+        this.input = new InputManager(this); // Pass game reference for custom key bindings
         this.difficultyManager = new DifficultyManager(); // Add difficulty system
-          this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);
+        
+        this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);
+          // Apply current skin to player (after shop data is loaded)
+        setTimeout(() => {
+            this.player.setSkin(this.currentSkin);
+            this.player.setEquippedEffects(this.equippedEffects);
+        }, 100);
         
         // Apply difficulty modifiers to player
         this.difficultyManager.applyPlayerModifiers(this.player);
-        
-        this.enemyManager = new EnemyManager(this.arena, this.difficultyManager);
+          this.enemyManager = new EnemyManager(this.arena, this.difficultyManager);
         this.upgradeSystem = new UpgradeSystem(); // Add upgrade system
-        this.visualEffects = new VisualEffects(); // Visual effects system        // Initialize UI system
+        this.visualEffects = new VisualEffects(); // Visual effects system
+        
+        // Initialize UI system
         this.ui = new ModernUI();
         this.ui.setGame(this);
 
@@ -29,15 +35,16 @@ window.Game = class {
         this.kills = 0;
         this.gameOver = false;
         this.paused = true; // Start paused during splash screen
+        this.wasManuallyPaused = false; // Track manual pause state
         
         // Survival time tracking
-        this.gameStartTime = null;
-        this.survivalTime = 0;
-          // Game timing
+        this.gameStartTime = null;        this.survivalTime = 0;
+        
+        // Game timing
         this.lastTime = 0;
-        this.running = true;
-        this.gameStarted = false; // Track if game has started
-          // Set up upgrade system event listener
+        this.running = true;        this.gameStarted = false; // Track if game has started
+        
+        // Set up upgrade system event listener
         this.setupUpgradeEventListener();
         
         // Set up auto-pause when user switches tabs
@@ -45,10 +52,55 @@ window.Game = class {
         
         // ByteCoin system
         this.byteCoins = 0;
-        this.byteCoinMultiplier = 1; // For future upgrades that increase coin gains
+        this.byteCoinMultiplier = 1; // For future upgrades that increase coin gains        // Shop system
+        this.shopVisible = false;
+        this.ownedSkins = ['default']; // Array of owned skin IDs
+        this.currentSkin = 'default'; // Currently equipped skin
+        this.ownedEffects = []; // Array of owned visual effect IDs
+        this.equippedEffects = []; // Array of currently equipped effect IDs
+        this.shopData = this.initializeShopData();
         
-        this.showSplashScreen();
-    }    showSplashScreen() {
+        // Load owned skins from localStorage
+        this.loadOwnedSkins();
+        
+        // Ensure shop starts hidden
+        setTimeout(() => {
+            const shopOverlay = document.getElementById('shopOverlay');
+            if (shopOverlay) {
+                shopOverlay.classList.add('hidden');
+                shopOverlay.style.display = 'none';
+            }
+        }, 10);
+        
+        // Overlay tracking for auto-pause
+        this.openOverlays = new Set();
+        
+        // Control bindings system
+        this.keyBindings = {
+            moveUp: 'KeyW',
+            moveDown: 'KeyS', 
+            moveLeft: 'KeyA',
+            moveRight: 'KeyD',
+            dash: 'Space',
+            overclock: 'KeyQ',
+            pause: 'KeyP',
+            shop: 'KeyM',
+            help: 'KeyH',            changelog: 'KeyC'
+        };
+        this.loadKeyBindings();        this.isListeningForKey = false;        this.currentBindingAction = null;
+        
+        // Debug mode state
+        this.debugModeUnlocked = false;
+        
+        // Set up key binding event listeners
+        this.setupKeyBindingListeners();
+        
+        // Set up global key handlers
+        this.setupGlobalKeyHandlers();
+          this.showSplashScreen();
+    }
+    
+    showSplashScreen() {
         // Try to start intro music immediately when game loads
         console.log('🎵 Attempting to start Loading Intro music...');
         this.audioManager.testAutoplayAndPrompt().then(result => {
@@ -145,10 +197,11 @@ window.Game = class {
                     }, 500);
                 }, 2000);
             }, 1000);
-        } else {
-            this.hideSplashScreen();
+        } else {            this.hideSplashScreen();
         }
-    }    startGameFromLogo() {
+    }
+    
+    startGameFromLogo() {
         const gameSplash = document.getElementById('gameSplash');
         const gameContainer = document.getElementById('gameContainer');
         
@@ -171,19 +224,42 @@ window.Game = class {
                     setTimeout(() => {
                         gameContainer.style.opacity = '1';
                     }, 50);
-                }
-            }, 300);
+                }            }, 300);
             
             // Clean up game splash after fade completes
             setTimeout(() => {
                 gameSplash.style.display = 'none';
                 gameSplash.classList.remove('fade-out');
-                this.showDifficultySelection();
+                this.showAuthenticationScreen();
             }, 1000);
         } else {
-            this.showDifficultySelection();
+            this.showAuthenticationScreen();
         }
-    }    hideSplashScreen() {
+    }
+    
+    showAuthenticationScreen() {
+        console.log('🔐 Showing authentication screen...');
+        
+        // Initialize the AuthManager if it doesn't exist
+        if (!window.authManager) {
+            window.authManager = new AuthManager();
+        }
+        
+        // Show the authentication overlay
+        window.authManager.showAuthOverlay();
+    }
+    
+    setUserProfile(userProfile) {
+        this.userProfile = userProfile;
+        console.log('👤 User profile set:', userProfile.name);
+    }
+    
+    startGame() {
+        console.log('🎮 Starting game after authentication...');
+        this.showDifficultySelection();
+    }
+    
+    hideSplashScreen() {
         // This method is now only used as a fallback if splash elements are missing
         const studioSplash = document.getElementById('studioSplash');
         const gameSplash = document.getElementById('gameSplash');
@@ -238,18 +314,19 @@ window.Game = class {
         }
         
         console.log(`🎮 Player selected difficulty: ${difficulty}`);
-        
-        // Reset game state
+          // Reset game state
         this.score = 0;
         this.kills = 0;
         this.gameOver = false;
         this.paused = false;
-        this.gameStartTime = 0;
-        this.survivalTime = 0;
-        
-        // Reset player to center
+        this.gameStartTime = null; // Reset to null, will be set when game actually starts
+        this.survivalTime = 0;        // Reset player to center
         if (this.player) {
             this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);
+            // Apply current skin to new player
+            this.player.setSkin(this.currentSkin);
+            // Apply equipped effects to new player
+            this.player.setEquippedEffects(this.equippedEffects);
         }
         
         // Set the difficulty in the difficulty manager
@@ -291,9 +368,10 @@ window.Game = class {
         
         // Show difficulty selection
         this.showDifficultySelection();
-    }start() {
+    }    start() {
         this.gameStarted = true;
         this.paused = false; // Unpause the game when it starts
+        this.gameStartTime = Date.now(); // Set the actual start time
         
         // Show the game container if it's not already visible
         const gameContainer = document.getElementById('gameContainer');
@@ -356,19 +434,21 @@ window.Game = class {
         
         const deltaTime = (currentTime - this.lastTime) / 1000;
         this.lastTime = currentTime;
-        
-        if (!this.gameOver && !this.paused) {
+          if (!this.gameOver && !this.paused) {
             this.update(deltaTime);
-            
-            // Update survival time
-            if (this.gameStartTime !== null) {
+              // Update survival time
+            if (this.gameStartTime !== null && this.gameStarted) {
                 this.survivalTime = (Date.now() - this.gameStartTime) / 1000;
+            } else {
+                this.survivalTime = 0; // Ensure it's 0 before game starts
             }
         }
         
-        this.render();
+        // Handle input regardless of pause state (so pause/unpause works)
+        this.handleGameInput();
         
-        // Update UI with current game data
+        this.render();
+          // Update UI with current game data
         const gameData = {
             player: this.player,
             score: this.score,
@@ -380,6 +460,7 @@ window.Game = class {
             upgradeSystem: this.upgradeSystem,
             gameOver: this.gameOver,
             paused: this.paused,
+            shopVisible: this.shopVisible,
             arena: this.arena,
             enemies: this.enemyManager.enemies
         };
@@ -391,10 +472,8 @@ window.Game = class {
     
     update(deltaTime) {
         // Don't update game if game over
-        if (this.gameOver) return;
-
-        // Update player and capture action events for visual effects
-        const playerActionEvents = this.player.update(deltaTime, this.input, this.arena);
+        if (this.gameOver) return;        // Update player and capture action events for visual effects
+        const playerActionEvents = this.player.update(deltaTime, this.input, this.arena, this);
         
         // Update arena (safe zone timer)
         this.arena.update(deltaTime, this.player.x, this.player.y);
@@ -496,320 +575,527 @@ window.Game = class {
             this.renderOverclockOverlay();
         }
         
-        // Restore canvas transform and ensure alpha is reset
+        // Restore transform
         this.ctx.restore();
-        this.ctx.globalAlpha = 1.0;
-    }    handleGameInput() {
-        // Don't handle input if game hasn't started yet
-        if (!this.gameStarted) {
-            return;
-        }
-  
         
-        // Close settings with ESC key
-        if (this.input.wasKeyPressed('Escape')) {
-            if (this.ui.settingsVisible) {
-                this.ui.hideSettings();
-            }
-        }        // Toggle help display (pauses game)
-        if (this.input.wasKeyPressed('KeyH')) {
-            if (this.ui.helpVisible) {
-                // Hide help and unpause
-                this.ui.hideHelp();
-                this.paused = false;
-                this.wasManuallyPaused = false; // Clear manual pause flag
-            } else {
-                // Show help and pause
-                this.ui.toggleHelp();
-                this.paused = true;
-                this.wasManuallyPaused = true; // Mark as manual pause
-            }
-        }
-
-        // Toggle changelog display (pauses game)
-        if (this.input.wasKeyPressed('KeyC')) {
-            if (this.ui.changelogVisible) {
-                // Hide changelog and unpause
-                this.ui.hideChangelog();
-                this.paused = false;
-                this.wasManuallyPaused = false; // Clear manual pause flag
-            } else {
-                // Show changelog and pause
-                this.ui.toggleChangelog();
-                this.paused = true;
-                this.wasManuallyPaused = true; // Mark as manual pause
-            }
-        }
-          // Toggle general pause
-        if (this.input.wasKeyPressed('KeyP')) {
-            if (this.ui.changelogVisible) {
-                // If changelog is open, close it first
-                this.ui.hideChangelog();
-            }
-            if (this.ui.helpVisible) {
-                // If help is open, close it first
-                this.ui.hideHelp();
-            }
-            this.paused = !this.paused;
-            this.wasManuallyPaused = this.paused; // Track manual pause state
-        }          // Restart game (only when game over or paused)
-        if (this.input.wasKeyPressed('KeyR') && (this.gameOver || this.paused)) {
-            if (this.paused && !this.gameOver) {
-                // Show confirmation for restart during pause
-                if (confirm('Are you sure you want to restart? Current progress will be lost.')) {
-                    this.restartGame();
-                } else {
-                    return; // Don't restart if user cancels
-                }
-            } else {
-                // Direct restart when game is over
-                this.restartGame();
-            }
-        }
-          // Change difficulty when game over (press B)
-        if (this.gameOver && this.input.wasKeyPressed('KeyB')) {
-            this.changeDifficultyOnGameOver();
-        }
-    }    pause() {
-        if (!this.gameOver) {
-            console.log('🎮 Game paused');
-            this.paused = true;
-            this.wasManuallyPaused = true;
-        }
-    }
-
-    unpause() {
-        if (!this.gameOver && this.wasManuallyPaused) {
-            console.log('🎮 Game unpaused');
-            this.paused = false;
-            this.wasManuallyPaused = false;
-        }
-    }    restartGame() {
-        // Reset audio using AudioManager
-        this.audioManager.reset();
-        
-        // Reset player
-        this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);
-        
-        // Reset enemy manager
-        this.enemyManager = new EnemyManager(this.arena, this.difficultyManager);
-        
-        // Reset safe zone
-        this.arena.resetSafeZone();
-        
-        // Clear visual effects
-        this.visualEffects.clear();
-        
-        // Reset upgrade system
-        this.upgradeSystem.reset();
-          // Reset game state
-        this.score = 0;
-        this.kills = 0;
-        this.gameOver = false;
-        this.gameStarted = false; // Reset game started flag
-          // Reset survival time tracking
-        this.gameStartTime = null;
-        this.survivalTime = 0;
-        
-        // Show difficulty selection again
-        this.showDifficultySelection();    }
-
-    renderOverclockScreenEffects() {
-        // Background color shift during Overclock
-        const time = Date.now() / 1000;
-        const intensity = 0.1 + 0.05 * Math.sin(time * 6); // Pulsing intensity
-        
-        // Apply magenta tint to background
-        this.ctx.fillStyle = `rgba(255, 0, 255, ${intensity})`;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Add scanning lines effect
-        this.ctx.strokeStyle = 'rgba(255, 0, 255, 0.3)';
-        this.ctx.lineWidth = 1;
-        const lineSpacing = 4;
-        const offset = (time * 200) % lineSpacing; // Moving lines
-        
-        for (let y = -offset; y < this.canvas.height + lineSpacing; y += lineSpacing) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, y);
-            this.ctx.lineTo(this.canvas.width, y);
-            this.ctx.stroke();
-        }
-    }
-    
-    renderOverclockOverlay() {
-        // Screen edge glow during Overclock
-        const time = Date.now() / 1000;
-        const glowIntensity = 0.3 + 0.2 * Math.sin(time * 4);
-        
-        // Create radial gradient from edges
-        const centerX = this.canvas.width / 2;
-        const centerY = this.canvas.height / 2;
-        const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY);
-        
-        const gradient = this.ctx.createRadialGradient(
-            centerX, centerY, maxRadius * 0.6,
-            centerX, centerY, maxRadius
-        );
-        
-        gradient.addColorStop(0, 'rgba(255, 0, 255, 0)');
-        gradient.addColorStop(1, `rgba(255, 0, 255, ${glowIntensity})`);
-        
-        this.ctx.fillStyle = gradient;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Corner energy flashes
-        const corners = [
-            { x: 20, y: 20 },
-            { x: this.canvas.width - 20, y: 20 },
-            { x: 20, y: this.canvas.height - 20 },
-            { x: this.canvas.width - 20, y: this.canvas.height - 20 }
-        ];
-        
-        corners.forEach((corner, index) => {
-            const flashTime = time * 3 + index * Math.PI / 2;
-            const flashIntensity = Math.max(0, Math.sin(flashTime));
-            
-            if (flashIntensity > 0.7) {
-                this.ctx.fillStyle = `rgba(255, 0, 255, ${flashIntensity})`;
-                this.ctx.beginPath();
-                this.ctx.arc(corner.x, corner.y, 15, 0, Math.PI * 2);
-                this.ctx.fill();
-            }        });
+        // Render UI elements on top
+        this.ui.render(this.ctx);
     }
     
     setupUpgradeEventListener() {
+        // Listen for upgrade selection events from UI
         document.addEventListener('upgradeSelected', (event) => {
-            this.handleUpgradeSelected(event.detail.upgradeId);
+            const upgradeId = event.detail.upgradeId;
+            console.log(`🔧 Player selected upgrade: ${upgradeId}`);
+            
+            // Apply the upgrade
+            const upgradeEffects = this.upgradeSystem.applyUpgrade(upgradeId);
+            
+            // Update player with new effects
+            const allEffects = this.upgradeSystem.getActiveEffects();
+            this.player.applyUpgradeEffects(allEffects);
+            
+            // Hide upgrade menu and continue game
+            this.ui.hideUpgradeMenu();
+            this.upgradeSystem.setUpgradeMenuVisible(false);
+            
+            // Continue to next wave
+            this.enemyManager.continueAfterUpgrade();
         });
     }
-      handleUpgradeSelected(upgradeId) {
-        console.log(`🔧 Player selected upgrade: ${upgradeId}`);
-        
-        // Apply the upgrade
-        const effects = this.upgradeSystem.applyUpgrade(upgradeId);
-        
-        // Apply effects to player
-        this.applyUpgradeEffectsToPlayer(effects);
-        
-        // Resume the game
-        this.paused = false;
-        this.wasManuallyPaused = false; // Clear manual pause flag when resuming
-        
-        // Continue with next wave
-        this.enemyManager.continueAfterUpgrade();
+    
+    loadKeyBindings() {
+        // Load key bindings from localStorage or use defaults
+        const savedBindings = localStorage.getItem('neurocoreKeyBindings');
+        if (savedBindings) {
+            try {
+                this.keyBindings = { ...this.keyBindings, ...JSON.parse(savedBindings) };
+                console.log('🎮 Key bindings loaded from localStorage');
+            } catch (error) {
+                console.warn('❌ Failed to load key bindings, using defaults');
+            }
+        }
     }
-      applyUpgradeEffectsToPlayer(effects) {
-        // Apply individual upgrade effects to player
-        this.player.applyUpgradeEffects(effects);
+    
+    saveKeyBindings() {
+        // Save key bindings to localStorage
+        localStorage.setItem('neurocoreKeyBindings', JSON.stringify(this.keyBindings));
+        console.log('💾 Key bindings saved');
+    }
+    
+    setupKeyBindingListeners() {
+        // Set up event listeners for key binding customization
+        document.addEventListener('keydown', (event) => {
+            if (this.isListeningForKey && this.currentBindingAction) {
+                event.preventDefault();
+                this.setKeyBinding(this.currentBindingAction, event.code);
+                this.completeKeyBinding(event.code);
+            }
+        });
+    }
+    
+    startKeyBinding(action) {
+        // Start listening for a key to bind to an action
+        this.isListeningForKey = true;
+        this.currentBindingAction = action;
+        this.showKeyBindingInstruction();
+        console.log(`🎯 Listening for key binding for action: ${action}`);
+    }
+    
+    setKeyBinding(action, keyCode) {
+        // Set a key binding for an action
+        if (action && keyCode) {
+            this.keyBindings[action] = keyCode;
+            console.log(`🎮 Key binding set: ${action} = ${keyCode}`);
+        }
+    }
+    
+    resetKeyBindings() {
+        // Reset key bindings to defaults
+        this.keyBindings = {
+            dash: 'Space',
+            overclock: 'KeyQ',
+            pause: 'KeyP',
+            shop: 'KeyM',
+            help: 'KeyH',
+            changelog: 'KeyC'
+        };
+        this.saveKeyBindings();
+        this.updateKeyBindingDisplay();
+        console.log('🔄 Key bindings reset to defaults');
+    }
+    
+    updateKeyBindingDisplay() {
+        // Update the UI to show current key bindings
+        Object.keys(this.keyBindings).forEach(action => {
+            const element = document.getElementById(`key-${action}`);
+            if (element) {
+                element.textContent = this.getKeyDisplayName(this.keyBindings[action]);
+            }
+        });
+    }
+    
+    getKeyDisplayName(keyCode) {
+        // Convert key code to display-friendly name
+        const keyMap = {
+            'Space': 'SPACE',
+            'KeyQ': 'Q',
+            'KeyW': 'W',
+            'KeyE': 'E',
+            'KeyR': 'R',
+            'KeyT': 'T',
+            'KeyA': 'A',
+            'KeyS': 'S',
+            'KeyD': 'D',
+            'KeyF': 'F',
+            'KeyP': 'P',
+            'KeyM': 'M',
+            'KeyH': 'H',
+            'KeyC': 'C',
+            'ShiftLeft': 'L-SHIFT',
+            'ShiftRight': 'R-SHIFT',
+            'ControlLeft': 'L-CTRL',
+            'ControlRight': 'R-CTRL'
+        };
+        return keyMap[keyCode] || keyCode;
+    }
+    
+    showKeyBindingInstruction() {
+        // Show instruction to press a key
+        const instruction = document.createElement('div');
+        instruction.id = 'keyBindingInstruction';
+        instruction.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #00ffff;
+            padding: 20px;
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 10000;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+        `;
+        instruction.innerHTML = `
+            <div>Press a key to bind to this action</div>
+            <div style="margin-top: 10px; font-size: 12px;">Press ESC to cancel</div>
+        `;
+        document.body.appendChild(instruction);
+    }
+    
+    hideKeyBindingInstruction() {
+        // Hide the key binding instruction
+        const instruction = document.getElementById('keyBindingInstruction');
+        if (instruction) {
+            document.body.removeChild(instruction);
+        }
+    }
+    
+    cancelKeyBinding() {
+        // Cancel key binding process
+        this.isListeningForKey = false;
+        this.currentBindingAction = null;
+        this.hideKeyBindingInstruction();
+        console.log('❌ Key binding cancelled');
+    }
+    
+    completeKeyBinding(keyCode) {
+        // Complete the key binding process
+        this.isListeningForKey = false;
+        this.currentBindingAction = null;
+        this.hideKeyBindingInstruction();
+        this.saveKeyBindings();
+        this.updateKeyBindingDisplay();
+        console.log(`✅ Key binding completed: ${keyCode}`);
+    }
+    
+    setupGlobalKeyHandlers() {
+        // Set up global key handlers that work regardless of focus
+        document.addEventListener('keydown', (event) => {
+            // Handle escape key during key binding
+            if (this.isListeningForKey && event.code === 'Escape') {
+                event.preventDefault();
+                this.cancelKeyBinding();
+                return;
+            }
+            
+            // Handle other global keys (pause, etc.)
+            this.handleGlobalKeyPress(event);
+        });
+    }
+    
+    handleGlobalKeyPress(event) {
+        // Handle global key presses (pause, shop, help, etc.)
+        switch (event.code) {
+            case this.keyBindings.pause:
+                event.preventDefault();
+                this.togglePause();
+                break;
+            case this.keyBindings.shop:
+                if (this.gameStarted && !this.gameOver) {
+                    event.preventDefault();
+                    this.toggleShop();
+                }
+                break;
+            case this.keyBindings.help:
+                event.preventDefault();
+                this.ui.toggleHelp();
+                break;
+            case this.keyBindings.changelog:
+                event.preventDefault();
+                this.ui.toggleChangelog();
+                break;
+        }
+    }
+    
+    handleEscapeKey() {
+        // Handle escape key for closing overlays
+        if (this.ui.helpVisible) {
+            this.ui.hideHelp();
+        } else if (this.ui.settingsVisible) {
+            this.ui.hideSettings();
+        } else if (this.shopVisible) {
+            this.hideShop();
+        }
+    }
+    
+    togglePause() {
+        // Toggle pause state
+        if (this.gameStarted && !this.gameOver) {
+            this.paused = !this.paused;
+            this.wasManuallyPaused = this.paused;
+            
+            if (this.debugModeUnlocked) {
+                console.log(this.paused ? '⏸️ Game Paused' : '▶️ Game Resumed');
+            }
+        }
+    }
+    
+    toggleShop() {
+        // Toggle shop visibility
+        if (this.shopVisible) {
+            this.hideShop();
+        } else {
+            this.showShop();
+        }
+    }
+    
+    showShop() {
+        // Show the shop overlay
+        const shopOverlay = document.getElementById('shopOverlay');
+        if (shopOverlay) {
+            shopOverlay.classList.remove('hidden');
+            this.shopVisible = true;
+            this.setOverlayOpen('shop', true);
+        }
+    }
+    
+    hideShop() {
+        // Hide the shop overlay
+        const shopOverlay = document.getElementById('shopOverlay');
+        if (shopOverlay) {
+            shopOverlay.classList.add('hidden');
+            this.shopVisible = false;
+            this.setOverlayOpen('shop', false);
+        }
+    }
+
+    setupAutoFocusPause() {
+        // Function to pause the game when the window loses focus
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                this.pauseGame();
+            } else {
+                this.resumeGame();
+            }        };
         
-        console.log(`🎯 Applied upgrade effects:`, effects);
+        // Initial check and setup
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        if (document.hidden) {
+            this.pauseGame();
+        }
     }
     
     checkForWaveCompletion() {
-        const waveState = this.enemyManager.getWaveState();
-        
-        // Check if wave just completed and we haven't shown upgrade menu yet
-        if (waveState === 'completed' && !this.upgradeSystem.shouldShowUpgradeMenu() && !this.paused) {
-            const currentWave = this.enemyManager.getCurrentWave();
+        // Check if wave is completed and upgrade menu should be shown
+        if (this.enemyManager.getWaveState() === 'completed' && 
+            !this.upgradeSystem.shouldShowUpgradeMenu()) {
             
-            // Handle wave completion healing before showing upgrade menu
-            this.handleWaveCompletionHealing(currentWave);
-            
-            // Show upgrade menu at wave 2, wave 5, and then every 5 waves
-            if (currentWave === 2 || (currentWave >= 5 && (currentWave - 5) % 5 === 0)) {
-                this.showUpgradeMenu();
-            }
-        }
-    }    showUpgradeMenu() {
-        console.log('🎮 Showing upgrade menu...');
-        
-        // Generate upgrade choices
-        const choices = this.upgradeSystem.generateUpgradeChoices();
-        
-        if (choices.length > 0) {
-            // Mark that we're showing the upgrade menu
+            // Generate upgrade choices and show menu
+            const upgradeChoices = this.upgradeSystem.generateUpgradeChoices();
             this.upgradeSystem.setUpgradeMenuVisible(true);
-            
-            // Pause the game
-            this.paused = true;
-            this.wasManuallyPaused = true; // Upgrade menu pause is considered manual
-            
-            // Show the upgrade menu in UI
-            this.ui.showUpgradeMenu(choices);
+            this.ui.showUpgradeMenu(upgradeChoices);
         }
     }
     
-    setupAutoFocusPause() {
-        // Track if the game was manually paused before losing focus
-        this.wasManuallyPaused = false;
-        
-        // Pause game when window loses focus (user switches tabs)
-        window.addEventListener('blur', () => {
-            // Only auto-pause if the game has started and is currently running
-            if (this.gameStarted && !this.gameOver && !this.paused) {
-                this.wasManuallyPaused = false; // This is an auto-pause
-                this.paused = true;
-                console.log('🔄 Game auto-paused (focus lost)');
-            } else if (this.gameStarted && !this.gameOver && this.paused) {
-                // Game was already paused, remember it was manual
-                this.wasManuallyPaused = true;
-            }
-        });
-          // Resume game when window regains focus (user returns to tab)
-        window.addEventListener('focus', () => {
-            // Only auto-resume if the game has started, is not game over, 
-            // is currently paused, and was not manually paused
-            if (this.gameStarted && !this.gameOver && this.paused && !this.wasManuallyPaused) {
-                this.paused = false;
-                console.log('▶️ Game auto-resumed (focus regained)');
-            }
-        });
-    }
-
-    // Difficulty-based healing system methods
     handleDifficultyHealing(deltaTime) {
-        // Only heal during waves if difficulty allows
-        if (this.difficultyManager.shouldHealPlayer(this.enemyManager.getCurrentWave(), true)) {
-            const healingRate = this.difficultyManager.getHealingRate();
-            if (healingRate > 0 && this.player.health < this.player.maxHealth) {
-                const oldHealth = this.player.health;
+        // Handle difficulty-based healing
+        const healingMode = this.difficultyManager.getCurrentDifficulty().healingType;
+        
+        if (healingMode === 'gradual' && this.gameStarted && !this.gameOver) {
+            const healingRate = this.difficultyManager.getCurrentDifficulty().healingRate;
+            if (healingRate > 0) {
                 this.player.heal(healingRate * deltaTime);
-                
-                // Trigger healing visual effect if health actually increased
-                if (this.player.health > oldHealth) {
-                    this.visualEffects.onPlayerHeal(this.player.x, this.player.y);
-                }
             }
         }
     }
-
-    handleWaveCompletionHealing(currentWave) {
-        // Check if player should heal after wave completion
-        if (this.difficultyManager.shouldHealPlayer(currentWave, false)) {
-            const oldHealth = this.player.health;
-            
-            // Different healing amounts based on difficulty
-            const config = this.difficultyManager.getCurrentDifficulty();
-            let healAmount = 0;
-            
-            switch (config.healingType) {
-                case 'after_wave':
-                    healAmount = Math.ceil(this.player.maxHealth * 0.25); // 25% of max health
-                    break;
-                case 'every_3_waves':
-                    healAmount = Math.ceil(this.player.maxHealth * 0.5); // 50% of max health for every 3rd wave
-                    break;
-                default:
-                    healAmount = 0;
-            }
-            
-            if (healAmount > 0 && this.player.health < this.player.maxHealth) {
-                this.player.heal(healAmount);
-                  // Trigger healing visual effect with heal amount
-                this.visualEffects.onPlayerHeal(this.player.x, this.player.y, healAmount);
-                
-                console.log(`💚 Wave ${currentWave} healing: +${healAmount} HP (${config.healingType})`);
-            }        }
+    
+    addByteCoins(amount) {
+        if (this.debugModeUnlocked) {
+            // In debug mode, don't actually change the amount - show infinite
+            console.log(`🪙 ByteCoins gained: ${amount} (Debug mode: infinite coins)`);
+            return;
+        }
+        
+        this.byteCoins += Math.floor(amount * this.byteCoinMultiplier);
+        this.ui.updateByteCoins(this.byteCoins);
+        console.log(`🪙 ByteCoins: ${this.byteCoins} (+${amount})`);
     }
-}
+    
+    start() {
+        this.gameStarted = true;
+        this.paused = false;
+        this.gameStartTime = Date.now();
+        
+        // Start the game loop if not already running
+        if (!this.running) {
+            this.running = true;
+            this.gameLoop();
+        }
+        
+        console.log('🎮 Game started!');
+    }
+    
+    gameLoop(currentTime = 0) {
+        if (!this.running) return;
+        
+        const deltaTime = Math.min((currentTime - this.lastTime) / 1000, 0.1);
+        this.lastTime = currentTime;
+        
+        // Update survival time if game is active
+        if (this.gameStarted && !this.paused && !this.gameOver && this.gameStartTime) {
+            this.survivalTime = (currentTime - this.gameStartTime) / 1000;
+        }
+        
+        // Update game state if not paused
+        if (!this.paused && this.gameStarted) {
+            this.update(deltaTime);
+        }
+        
+        // Update UI
+        this.ui.update(deltaTime, {
+            player: this.player,
+            arena: this.arena,
+            enemyManager: this.enemyManager,
+            upgradeSystem: this.upgradeSystem,
+            score: this.score,
+            kills: this.kills,
+            paused: this.paused,
+            gameOver: this.gameOver,
+            survivalTime: this.survivalTime,
+            shopVisible: this.shopVisible || false
+        });
+        
+        // Render game
+        this.render();
+        
+        // Continue loop
+        requestAnimationFrame(this.gameLoop.bind(this));
+    }
+    
+    render() {
+        // Reset all canvas settings at the start
+        this.ctx.globalAlpha = 1.0;
+        this.ctx.shadowBlur = 0;
+        this.ctx.shadowColor = 'transparent';
+        
+        // Apply screen shake offset
+        const shakeOffset = this.visualEffects.getScreenShakeOffset();
+        this.ctx.save();
+        this.ctx.translate(shakeOffset.x, shakeOffset.y);
+        
+               
+        // Clear canvas
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillRect(-shakeOffset.x, -shakeOffset.y, this.canvas.width, this.canvas.height);
+        
+        // Apply Overclock screen effects
+        if (this.player.isOverclocked) {
+            this.renderOverclockScreenEffects();
+        }
+        
+        // Render arena
+        this.arena.render(this.ctx);
+        
+        // Reset alpha between major renders
+        this.ctx.globalAlpha = 1.0;
+        
+        // Render enemies
+        this.enemyManager.render(this.ctx);
+        
+        // Reset alpha between major renders
+        this.ctx.globalAlpha = 1.0;
+        
+        // Render player
+        this.player.render(this.ctx);
+        
+        // Reset alpha between major renders
+        this.ctx.globalAlpha = 1.0;
+        
+        // Render visual effects (sparks, damage numbers, etc.)
+        this.visualEffects.render(this.ctx);
+        
+        // Reset alpha between major renders
+        this.ctx.globalAlpha = 1.0;
+        
+        // Apply final Overclock overlay effects
+        if (this.player.isOverclocked) {
+            this.renderOverclockOverlay();
+        }
+        
+        // Restore transform
+        this.ctx.restore();
+        
+        // Render UI elements on top
+        this.ui.render(this.ctx);
+    }
+    
+    renderOverclockScreenEffects() {
+        // Render screen overlay effects during Overclock
+        this.ctx.save();
+        
+        // Create a subtle pulsing overlay
+        const time = Date.now() / 1000;
+        const pulse = 0.05 + 0.03 * Math.sin(time * 8);
+        
+        this.ctx.fillStyle = `rgba(255, 0, 255, ${pulse})`;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        this.ctx.restore();
+    }
+    
+    renderOverclockOverlay() {
+        // Additional overlay effects during Overclock
+        this.ctx.save();
+        
+        // Create glowing border effect
+        this.ctx.strokeStyle = '#ff00ff';
+        this.ctx.lineWidth = 3;
+        this.ctx.shadowBlur = 10;
+        this.ctx.shadowColor = '#ff00ff';
+        this.ctx.strokeRect(5, 5, this.canvas.width - 10, this.canvas.height - 10);
+        
+        this.ctx.restore();
+    }
+
+    initializeShopData() {
+        return {
+            skins: {
+                'developer-core': {
+                    id: 'developer-core',
+                    name: 'Developer Core',
+                    type: 'premium',
+                    cost: 1000,
+                    description: 'Elite developer neural interface',
+                    color: '#ff6600',
+                    glowColor: '#ff9944'
+                },
+                'neural-god': {
+                    id: 'neural-god',
+                    name: 'Neural God',
+                    type: 'premium',
+                    cost: 2000,
+                    description: 'Transcendent AI consciousness',
+                    color: '#gold',
+                    glowColor: '#ffff00'
+                },
+                'og-red': { id: 'og-red', name: 'OG Red', type: 'og', cost: 500, description: 'Classic red interface', color: '#ff0000' },
+                'og-blue': { id: 'og-blue', name: 'OG Blue', type: 'og', cost: 500, description: 'Classic blue interface', color: '#0080ff' },
+                'og-green': { id: 'og-green', name: 'OG Green', type: 'og', cost: 500, description: 'Classic green interface', color: '#00ff00' },
+                'og-yellow': { id: 'og-yellow', name: 'OG Yellow', type: 'og', cost: 500, description: 'Classic yellow interface', color: '#ffff00' },
+                'og-purple': { id: 'og-purple', name: 'OG Purple', type: 'og', cost: 500, description: 'Classic purple interface', color: '#8000ff' },
+                'og-cyan': { id: 'og-cyan', name: 'OG Cyan', type: 'og', cost: 0, description: 'Free classic cyan interface', color: '#00ffff' }
+            },
+            effects: {
+                'particle-trail': { id: 'particle-trail', name: 'Particle Trail', cost: 750, description: 'Stunning particle trail' },
+                'energy-rings': { id: 'energy-rings', name: 'Energy Rings', cost: 1000, description: 'Pulsing energy rings' },
+                'pulse-wave': { id: 'pulse-wave', name: 'Pulse Wave', cost: 1250, description: 'Rhythmic pulse waves' }
+            }
+        };
+    }
+
+    loadOwnedSkins() {
+        // In the new system, purchases don't persist
+        // Reset to defaults each game session
+        this.ownedSkins = ['default', 'og-cyan']; // Default skin + free cyan OG
+        this.currentSkin = 'default';
+        this.ownedEffects = [];
+        this.equippedEffects = [];
+        
+        console.log('🛒 Shop data reset for new session');
+        console.log('👕 Owned skins:', this.ownedSkins);
+        console.log('🎨 Owned effects:', this.ownedEffects);
+    }
+    
+    pauseGame() {
+        if (!this.paused && this.gameStarted) {
+            this.paused = true;
+            this.wasManuallyPaused = false; // This is auto-pause
+            console.log('⏸️ Game auto-paused (focus lost)');
+        }
+    }
+    
+    resumeGame() {
+        if (this.paused && this.gameStarted && !this.wasManuallyPaused) {
+            this.paused = false;
+            console.log('▶️ Game auto-resumed (focus gained)');
+        }
+    }
+      setOverlayOpen(overlayName, isOpen) {
+        // Track which overlays are open for pause management
+        console.log(`📋 Overlay ${overlayName} ${isOpen ? 'opened' : 'closed'}`);
+    }
+};
